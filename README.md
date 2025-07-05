@@ -38,23 +38,48 @@ ArchiMate MCP Server fills a crucial gap in the MCP ecosystem by providing dedic
 ### Installation
 
 ```bash
-# Install with uv (recommended)
-uv add archi-mcp
+# Clone the repository
+git clone https://github.com/entira/archi-mcp.git
+cd archi-mcp
 
-# Or install with pip
-pip install archi-mcp
+# Install dependencies with uv
+uv sync
 
 # Download PlantUML JAR (required for diagram generation)
 curl -L https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -o plantuml.jar
 ```
 
+### Upgrading to Latest Version
+
+```bash
+# Navigate to your archi-mcp directory
+cd archi-mcp
+
+# Fetch latest changes
+git fetch origin
+
+# Upgrade to specific version (e.g., v1.0.2)
+git checkout v1.0.2
+
+# Or upgrade to latest main branch
+git checkout main
+git pull origin main
+
+# Update dependencies
+uv sync
+
+# Download latest PlantUML JAR if needed
+curl -L https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -o plantuml.jar
+```
+
 ### Claude Desktop Configuration
 
-**Setup**: Add to your Claude Desktop configuration file:
+Add to your Claude Desktop configuration file:
 
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
+#### Configuration for local installation:
 ```json
 {
   "mcpServers": {
@@ -158,11 +183,11 @@ The server automatically:
 This repository showcases comprehensive architectural documentation of the ArchiMate MCP Server itself, spanning all 7 ArchiMate layers with **production-ready diagrams**. Each layer is fully supported with complete PlantUML generation:
 
 ### 🎯 **Complete Layered Architecture Overview**
-![ArchiMate MCP Server - Enhanced Layered Architecture](docs/diagrams/archi_mcp_layered_architecture_enhanced.svg)
+![ArchiMate MCP Server - Enhanced Layered Architecture](https://raw.githubusercontent.com/entira/archi-mcp/main/docs/diagrams/archi_mcp_layered_architecture_enhanced.svg)
 *Comprehensive view showing key elements from all 7 ArchiMate layers with cross-layer relationships*
 
 ### 🎯 **Motivation Layer** 
-![Motivation View](docs/diagrams/archi_mcp_motivation.svg)
+![Motivation View](https://raw.githubusercontent.com/entira/archi-mcp/main/docs/diagrams/archi_mcp_motivation.svg)
 *Stakeholders, drivers, goals, and requirements driving the ArchiMate MCP Server implementation*
 - **Stakeholders**: Enterprise Architect, Software Developer, Claude Desktop User
 - **Drivers**: Architecture Complexity, ArchiMate Compliance, Modeling Automation, AI Integration Demand
@@ -170,14 +195,14 @@ This repository showcases comprehensive architectural documentation of the Archi
 - **Requirements**: MCP Protocol Support, ArchiMate 3.2 Support, PlantUML Generation, Real-time Error Analysis
 
 ### 📋 **Strategy Layer**
-![Strategy View](docs/diagrams/archi_mcp_strategy.svg)
+![Strategy View](https://raw.githubusercontent.com/entira/archi-mcp/main/docs/diagrams/archi_mcp_strategy.svg)
 *Strategic resources, capabilities, and courses of action for the ArchiMate MCP Server*
 - **Resources**: ArchiMate IP Knowledge, Development Team, MCP Ecosystem, Testing Infrastructure
 - **Capabilities**: Enterprise Architecture Modeling, Automated Diagram Generation, MCP Protocol Integration, Quality Assurance
 - **Courses of Action**: Open Source Strategy, MCP-First Strategy, Standards Compliance Strategy, Continuous Testing Strategy
 
 ### 🏢 **Business Layer**
-![Business View](docs/diagrams/archi_mcp_business.svg)
+![Business View](https://raw.githubusercontent.com/entira/archi-mcp/main/docs/diagrams/archi_mcp_business.svg)
 *Business actors, processes, services, and objects for architecture modeling*
 - **Business Actor**: Enterprise Architecture Role (responsible for creating and maintaining enterprise architecture models)
 - **Business Processes**: Architecture Modeling Process, Model Validation Process, Error Analysis Process
@@ -185,14 +210,14 @@ This repository showcases comprehensive architectural documentation of the Archi
 - **Business Objects**: Architecture Model, Diagram Specification, Validation Report
 
 ### 💻 **Application Layer**
-![Application Structure](docs/diagrams/archi_mcp_application.svg)
+![Application Structure](https://raw.githubusercontent.com/entira/archi-mcp/main/docs/diagrams/archi_mcp_application.svg)
 *Application components, services, and data objects implementing the MCP server*
 - **Components**: MCP Server Main, ArchiMate Engine, PlantUML Generator, Validation Engine, HTTP Server
 - **Services**: Diagram Generation Service, Architecture Analysis Service, Element Normalization Service, Error Analysis Service
 - **Data Objects**: Element Model, Relationship Model, PlantUML Code, Diagram Metadata
 
 ### ⚙️ **Technology Layer**
-![Technology Layer](docs/diagrams/archi_mcp_technology.svg)
+![Technology Layer](https://raw.githubusercontent.com/entira/archi-mcp/main/docs/diagrams/archi_mcp_technology.svg)
 *Technology services, system software, nodes, and artifacts supporting the MCP server*
 - **Technology Services**: MCP Protocol Service, PlantUML Service, Python Runtime Service, HTTP Service
 - **System Software**: Python Interpreter (3.11+), Java Runtime, Operating System
@@ -200,14 +225,14 @@ This repository showcases comprehensive architectural documentation of the Archi
 - **Artifacts**: ArchiMate MCP Server Package, PlantUML JAR (v1.2025.4), Configuration Files
 
 ### 🏗️ **Physical Layer**
-![Physical Layer](docs/diagrams/archi_mcp_physical.svg)
+![Physical Layer](https://raw.githubusercontent.com/entira/archi-mcp/main/docs/diagrams/archi_mcp_physical.svg)
 *Physical equipment, facilities, and distribution networks supporting the ArchiMate MCP Server*
 - **Equipment**: Developer Workstation, Cloud Server, User Device
 - **Facilities**: Development Office, Cloud Datacenter, User Location
 - **Distribution Networks**: Development Network, Internet Distribution, Local Network
 
 ### 🚀 **Implementation & Migration Layer**
-![Implementation & Migration](docs/diagrams/archi_mcp_implementation.svg)
+![Implementation & Migration](https://raw.githubusercontent.com/entira/archi-mcp/main/docs/diagrams/archi_mcp_implementation.svg)
 *Work packages, deliverables, plateaus, and implementation events for the ArchiMate MCP Server rollout*
 - **Work Packages**: Core MCP Implementation, Advanced Features Package, Integration Package, Production Release Package
 - **Deliverables**: MCP Protocol Implementation, ArchiMate Engine, Validation Framework, HTTP Server Integration, Test Suite
