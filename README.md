@@ -10,8 +10,12 @@
 [![Tests](https://img.shields.io/badge/Tests-194%20Passing-brightgreen.svg)](#-development)
 [![Coverage](https://img.shields.io/badge/Coverage-67%25-success.svg)](#-development)
 [![Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](#-overview)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blueviolet.svg)](https://docs.claude.com/en/docs/claude-code)
+[![Claude Desktop](https://img.shields.io/badge/Claude%20Desktop-Compatible-blueviolet.svg)](https://claude.ai/download)
 
 A specialized MCP (Model Context Protocol) server for generating PlantUML ArchiMate diagrams with comprehensive enterprise architecture modeling support.
+
+> **✨ Claude Code & Claude Desktop Compatible**: Fully tested with both Claude Code CLI and Claude Desktop. Automatic parameter handling ensures seamless operation across both platforms (v1.0.2+).
 
 > **🎯 Live Architecture Demo**: This repository includes a complete architectural blueprint of the ArchiMate MCP Server itself, spanning all 7 ArchiMate layers with 8 coordinated views. See the generated diagrams below for a real-world demonstration of the tool's capabilities.
 
