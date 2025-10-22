@@ -4,10 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "archi-mcp"
-version = "1.0.0"
+version = "1.0.2"
 description = "MCP server for generating PlantUML ArchiMate diagrams with comprehensive enterprise architecture modeling support"
 authors = [
-    {name = "Mgr. Patrik Skovajsa, Claude Code Assistant", email = ""}
+    {name = "Mgr. Patrik Skovajsa", email = "patrik.skovajsa@gmail.com"}
+]
+maintainers = [
+    {name = "Mgr. Patrik Skovajsa", email = "patrik.skovajsa@gmail.com"}
 ]
 readme = "README.md"
 license = {text = "MIT"}
@@ -59,10 +62,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/pskovajsa/archi-mcp"
-Repository = "https://github.com/pskovajsa/archi-mcp"
-Documentation = "https://github.com/pskovajsa/archi-mcp#readme"
-Issues = "https://github.com/pskovajsa/archi-mcp/issues"
+Homepage = "https://github.com/entira/archi-mcp"
+Repository = "https://github.com/entira/archi-mcp"
+Documentation = "https://github.com/entira/archi-mcp#readme"
+Issues = "https://github.com/entira/archi-mcp/issues"
 
 [project.scripts]
 archi-mcp = "archi_mcp.server:main"

@@ -27,7 +27,7 @@ This document contains development-specific instructions and technical details f
 ### Setup
 ```bash
 # Clone the repository
-git clone https://github.com/pskovajsa/archi-mcp.git
+git clone https://github.com/entira/archi-mcp.git
 cd archi-mcp
 
 # Install dependencies

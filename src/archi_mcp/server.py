@@ -14,13 +14,13 @@ import logging
 import threading
 import socket
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Literal
+from typing import Any, Dict, List, Optional, Literal, Union
 from pathlib import Path
 import glob
 from enum import Enum
 
 from fastmcp import FastMCP, utilities
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from PIL import Image
 import io
 
@@ -678,13 +678,28 @@ class DiagramInput(BaseModel):
         
         CRITICAL: Use string values like "true"/"false", NOT boolean true/false!""")
     
-    language: Optional[Literal["en", "sk"]] = Field("en", 
+    language: Optional[Literal["en", "sk"]] = Field("en",
         description="""Language for diagram labels and layer names:
         • "en" - English (default)
-        • "sk" - Slovak 
-        
+        • "sk" - Slovak
+
         Language is automatically detected from element/relationship text content.
         Slovak detection triggers automatic translation of layer names and relationship labels.""")
+
+    @model_validator(mode='before')
+    @classmethod
+    def parse_json_string(cls, data: Any) -> Any:
+        """Parse JSON string to dict for Claude Code compatibility.
+
+        Claude Code sends parameters as JSON strings, while Claude Desktop sends objects.
+        This validator handles both cases automatically.
+        """
+        if isinstance(data, str):
+            try:
+                return json.loads(data)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON string for diagram parameter: {e}")
+        return data
 
 # Element type normalization mapping - input formats to internal format
 ELEMENT_TYPE_MAPPING = {
@@ -1548,7 +1563,7 @@ def create_archimate_diagram(diagram: DiagramInput) -> str:
     """
     debug_log = []  # Collect debug log entries
     start_time = time.time()
-    
+
     def log_debug(level: str, message: str, details: Optional[Dict] = None):
         """Add entry to debug log."""
         entry = {

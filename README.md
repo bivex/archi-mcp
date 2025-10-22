@@ -306,7 +306,7 @@ Test element type normalization across all ArchiMate layers:
 
 **Quick Start for Developers:**
 ```bash
-git clone https://github.com/pskovajsa/archi-mcp.git
+git clone https://github.com/entira/archi-mcp.git
 cd archi-mcp
 uv sync --dev
 uv run pytest
