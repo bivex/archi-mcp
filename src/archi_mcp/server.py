@@ -1963,18 +1963,19 @@ The jar should be placed in the project root directory or one of these locations
                 log_debug('INFO', 'PNG generation disabled by configuration')
             generation_start = time.time()
             
-            # Create temporary PlantUML file for testing
+            # Create temporary PlantUML file for testing with UTF-8 encoding
             import tempfile
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.puml', delete=False) as temp_puml:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.puml', delete=False, encoding='utf-8') as temp_puml:
                 temp_puml.write(plantuml_code)
                 temp_puml_path = temp_puml.name
             
             # PNG generation test (MANDATORY)
             png_cmd = [
-                "java", 
+                "java",
                 "-Djava.awt.headless=true",  # Headless mode
-                "-jar", plantuml_jar, 
-                "-tpng", 
+                "-Dfile.encoding=UTF-8",  # Force UTF-8 encoding for Cyrillic support
+                "-jar", plantuml_jar,
+                "-tpng",
                 "-charset", "UTF-8",
                 temp_puml_path
             ]
@@ -2016,10 +2017,11 @@ The jar should be placed in the project root directory or one of these locations
                 svg_generation_start = time.time()
                 
                 svg_cmd = [
-                    "java", 
+                    "java",
                     "-Djava.awt.headless=true",  # Headless mode
-                    "-jar", plantuml_jar, 
-                    "-tsvg", 
+                    "-Dfile.encoding=UTF-8",  # Force UTF-8 encoding for Cyrillic support
+                    "-jar", plantuml_jar,
+                    "-tsvg",
                     "-charset", "UTF-8",
                     temp_puml_path
                 ]

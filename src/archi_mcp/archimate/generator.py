@@ -101,9 +101,14 @@ class ArchiMateGenerator:
         # Start building PlantUML code
         lines = []
         
-        # Add PlantUML header
+        # Add PlantUML header with UTF-8 encoding pragma
         lines.append("@startuml")
+        lines.append("!pragma charset UTF-8")
         lines.append("!include <archimate/Archimate>")
+        lines.append("")
+
+        # Enable UTF-8/Unicode support for Cyrillic and other non-Latin characters
+        lines.append("skinparam defaultFontName Arial")
         lines.append("")
         
         # Add title if provided
