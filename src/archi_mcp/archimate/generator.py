@@ -107,8 +107,31 @@ class ArchiMateGenerator:
         lines.append("!include <archimate/Archimate>")
         lines.append("")
 
-        # Enable UTF-8/Unicode support for Cyrillic and other non-Latin characters
-        lines.append("skinparam defaultFontName Arial")
+        # Professional business-style theme
+        lines.append("' === Professional Business Theme ===")
+        lines.append("skinparam defaultFontName Segoe UI")
+        lines.append("skinparam defaultFontSize 11")
+        lines.append("skinparam defaultFontStyle plain")
+        lines.append("")
+        lines.append("' Diagram styling")
+        lines.append("skinparam backgroundColor #FEFEFE")
+        lines.append("skinparam shadowing false")
+        lines.append("skinparam roundcorner 5")
+        lines.append("skinparam padding 4")
+        lines.append("")
+        lines.append("' Package styling")
+        lines.append("skinparam packageStyle rectangle")
+        lines.append("skinparam packageBorderColor #CCCCCC")
+        lines.append("skinparam packageBackgroundColor #FAFAFA")
+        lines.append("skinparam packageFontSize 12")
+        lines.append("skinparam packageFontStyle bold")
+        lines.append("skinparam packageFontColor #333333")
+        lines.append("")
+        lines.append("' Arrow styling")
+        lines.append("skinparam ArrowColor #666666")
+        lines.append("skinparam ArrowThickness 1.5")
+        lines.append("skinparam ArrowFontSize 10")
+        lines.append("skinparam ArrowFontColor #555555")
         lines.append("")
         
         # Add title if provided
@@ -195,16 +218,72 @@ class ArchiMateGenerator:
             lines.append(relationship.to_plantuml(self.translator, show_labels=self.layout.show_relationship_labels))
     
     def _generate_legend(self, lines: List[str]) -> None:
-        """Generate diagram legend."""
-        lines.append("' Legend")
+        """Generate professional business-style legend with layer colors and relationship types."""
+        lines.append("' === Professional Legend ===")
         lines.append("legend right")
-        
-        # Show layers present in diagram
-        layers_used = set(element.layer.value for element in self.elements.values())
-        for layer in sorted(layers_used):
+        lines.append("  <size:13><b>Architecture Layers</b></size>")
+        lines.append("  |= Layer |= Elements |= Color |")
+
+        # ArchiMate layer colors (official specification)
+        layer_colors = {
+            "Business": "#FFFFB5",      # Yellow
+            "Application": "#B5FFFF",    # Cyan
+            "Technology": "#C9E7B7",     # Green
+            "Physical": "#C9E7B7",       # Green (same as Technology)
+            "Motivation": "#CCCCFF",     # Light Purple
+            "Strategy": "#FFE0C9",       # Orange
+            "Implementation": "#FFE0E0"  # Pink
+        }
+
+        # Count elements per layer
+        layers_used = {}
+        for element in self.elements.values():
+            layer = element.layer.value
+            layers_used[layer] = layers_used.get(layer, 0) + 1
+
+        # Show layers with their colors
+        for layer in sorted(layers_used.keys()):
             translated_layer = self.translator.translate_layer(layer)
-            lines.append(f"  {translated_layer}")
-        
+            count = layers_used[layer]
+            color = layer_colors.get(layer, "#FFFFFF")
+            lines.append(f"  | <back:{color}>    </back> **{translated_layer}** | {count} | {color} |")
+
+        # Add relationship types if there are relationships
+        if self.relationships:
+            lines.append("  ====")
+            lines.append("  <size:13><b>Relationship Types</b></size>")
+
+            # Count relationship types
+            rel_types = {}
+            for rel in self.relationships:
+                rel_type = rel.relationship_type.value
+                rel_types[rel_type] = rel_types.get(rel_type, 0) + 1
+
+            # Show relationship types with symbols
+            rel_symbols = {
+                "Association": "...",
+                "Serving": "--->",
+                "Access": ".>",
+                "Realization": "--|>",
+                "Assignment": "-->",
+                "Aggregation": "o--",
+                "Composition": "*--",
+                "Triggering": "->>",
+                "Flow": "~>",
+                "Specialization": "--|>",
+                "Influence": "..>"
+            }
+
+            for rel_type in sorted(rel_types.keys()):
+                count = rel_types[rel_type]
+                symbol = rel_symbols.get(rel_type, "---")
+                lines.append(f"  | **{rel_type}** | {count} | {symbol} |")
+
+        lines.append("  ====")
+        lines.append("  <size:10><i>Total: {0} elements, {1} relationships</i></size>".format(
+            len(self.elements), len(self.relationships)
+        ))
+
         lines.append("end legend")
     
     def clear(self) -> None:
