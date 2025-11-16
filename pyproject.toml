@@ -47,6 +47,7 @@ dependencies = [
     "uvicorn>=0.24.0",
     "requests>=2.32.4",
     "lxml>=5.0.0",
+    "json5>=0.12.1",
 ]
 
 [project.optional-dependencies]

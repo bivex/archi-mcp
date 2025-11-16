@@ -613,8 +613,174 @@ class RelationshipInput(BaseModel):
     direction: Optional[LayoutDirectionType] = Field(None, 
         description="Direction hint for layout: top-bottom, left-right, bottom-top, right-left")
     
-    label: Optional[str] = Field(None, 
+    label: Optional[str] = Field(None,
         description="Custom relationship label (max 3 words, 30 chars). If not provided, uses translated relationship type.")
+
+
+def _auto_fix_json(json_string: str) -> tuple[bool, str, str]:
+    """Automatically fix common JSON errors.
+
+    Args:
+        json_string: The potentially invalid JSON string
+
+    Returns:
+        Tuple of (was_fixed, fixed_json, fix_description)
+    """
+    original = json_string
+    fixes_applied = []
+    import re
+
+    # Fix 0: CRITICAL - Replace single quotes with double quotes
+    # This is the most common error when copying Python dict strings
+    # Pattern: 'text' -> "text" (but preserve apostrophes in values)
+    if "'" in json_string:
+        json_string = json_string.replace("'", '"')
+        fixes_applied.append("Replaced single quotes with double quotes")
+
+    # Fix 1: Missing colons after property names
+    # Pattern: "name" "value" -> "name": "value"
+    pattern1 = r'("[\w_]+")(\s+)(")'
+    if re.search(pattern1, json_string):
+        json_string = re.sub(pattern1, r'\1:\3', json_string)
+        fixes_applied.append("Added missing colons after property names")
+
+    # Fix 2: Missing commas between properties (newline separated)
+    # Pattern: "value"\n  "next": -> "value",\n  "next":
+    pattern2 = r'("[^"]*"|\d+|true|false|null|\}|\])(\s*\n\s+)("[\w_]+":|{|"[\w_]+")'
+    if re.search(pattern2, json_string):
+        json_string = re.sub(pattern2, r'\1,\2\3', json_string)
+        if "Added missing commas" not in fixes_applied:
+            fixes_applied.append("Added missing commas between properties")
+
+    # Fix 3: Missing commas in same line
+    # Pattern: } { -> }, {
+    pattern3 = r'(\}|\])(\s+)(\{|\[)'
+    if re.search(pattern3, json_string):
+        json_string = re.sub(pattern3, r'\1,\2\3', json_string)
+        if "Added missing commas" not in fixes_applied:
+            fixes_applied.append("Added missing commas between objects/arrays")
+
+    # Fix 4: Property names without quotes
+    # Pattern: {id: "value"} -> {"id": "value"}
+    pattern4 = r'([{\s,])(\w+)(:)'
+    if re.search(pattern4, json_string):
+        json_string = re.sub(pattern4, r'\1"\2"\3', json_string)
+        fixes_applied.append("Added quotes around property names")
+
+    # Fix 5: Remove trailing commas
+    # Pattern: "value",] or "value",} -> "value"]  or "value"}
+    pattern5 = r',(\s*[}\]])'
+    if re.search(pattern5, json_string):
+        json_string = re.sub(pattern5, r'\1', json_string)
+        fixes_applied.append("Removed trailing commas")
+
+    # Fix 6: Extra opening braces
+    # Pattern: {}\n  "id" -> {\n  "id"
+    pattern6 = r'\{\}(\s*\n\s*")'
+    if re.search(pattern6, json_string):
+        json_string = re.sub(pattern6, r'{\1', json_string)
+        fixes_applied.append("Removed extra braces")
+
+    if fixes_applied:
+        fix_desc = "; ".join(fixes_applied)
+        return True, json_string, fix_desc
+
+    return False, original, ""
+
+
+def _format_json_error(json_string: str, error: json.JSONDecodeError) -> str:
+    """Format a detailed JSON error message with context and helpful suggestions.
+
+    Args:
+        json_string: The invalid JSON string
+        error: The JSONDecodeError exception
+
+    Returns:
+        Formatted error message with context and suggestions
+    """
+    # Extract error position
+    line_num = error.lineno
+    col_num = error.colno
+    error_msg = error.msg
+
+    # Get the lines around the error
+    lines = json_string.split('\n')
+    context_lines = []
+
+    # Show 2 lines before and after the error
+    start_line = max(0, line_num - 3)
+    end_line = min(len(lines), line_num + 2)
+
+    for i in range(start_line, end_line):
+        line_content = lines[i]
+        prefix = ">>> " if i == line_num - 1 else "    "
+        context_lines.append(f"{prefix}Line {i+1}: {line_content}")
+
+        # Add error pointer for the problematic line
+        if i == line_num - 1:
+            pointer = " " * (len(prefix) + len(f"Line {i+1}: ") + col_num - 1) + "^"
+            context_lines.append(pointer)
+
+    context = "\n".join(context_lines)
+
+    # Common error patterns and fixes
+    suggestions = []
+
+    if "Expecting ':'" in error_msg:
+        suggestions.append("Missing colon ':' after property name")
+        suggestions.append("Example fix: Change '\"name\" \"value\"' to '\"name\": \"value\"'")
+
+    if "Expecting ',' delimiter" in error_msg:
+        suggestions.append("Missing comma ',' between properties or array items")
+        suggestions.append("Example fix: Change '\"key1\": \"val1\" \"key2\": \"val2\"' to '\"key1\": \"val1\", \"key2\": \"val2\"'")
+
+    if "Expecting property name" in error_msg:
+        suggestions.append("Property name must be in double quotes")
+        suggestions.append("Example fix: Change '{id: \"customer\"}' to '{\"id\": \"customer\"}'")
+
+    if "Expecting value" in error_msg:
+        suggestions.append("Missing or invalid value after property name")
+        suggestions.append("Example fix: Ensure all properties have values in quotes")
+
+    if "Unterminated string" in error_msg:
+        suggestions.append("String not properly closed with closing quote")
+        suggestions.append("Example fix: Change '\"name: \"value\"' to '\"name\": \"value\"'")
+
+    if "Extra data" in error_msg:
+        suggestions.append("Extra characters after valid JSON (check for trailing commas or braces)")
+        suggestions.append("Example fix: Remove trailing commas or extra closing braces")
+
+    # Build the complete error message
+    formatted_error = f"""Invalid JSON string for diagram parameter:
+
+ERROR: {error_msg}
+LOCATION: Line {line_num}, Column {col_num}
+
+CONTEXT:
+{context}
+"""
+
+    if suggestions:
+        formatted_error += f"\nCOMMON FIXES:\n"
+        for i, suggestion in enumerate(suggestions, 1):
+            formatted_error += f"  {i}. {suggestion}\n"
+
+    formatted_error += f"""
+VALIDATION TIPS:
+  • All property names must be in double quotes: "name"
+  • All string values must be in double quotes: "value"
+  • Use colons after property names: "name": "value"
+  • Use commas between items: {{"a": 1, "b": 2}}
+  • No trailing commas: {{"last": "item"}} NOT {{"last": "item",}}
+
+SEE ALSO:
+  • Windows validation guide: WINDOWS_FIX.md
+  • Working example: examples/flower_business_corrected.json
+  • Quick validation: powershell -File validate_json.ps1
+"""
+
+    return formatted_error
+
 
 class DiagramInput(BaseModel):
     """Complete ArchiMate diagram specification with comprehensive capability discovery.
@@ -689,16 +855,40 @@ class DiagramInput(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def parse_json_string(cls, data: Any) -> Any:
-        """Parse JSON string to dict for Claude Code compatibility.
+        """Parse JSON string to dict for Claude Code compatibility with auto-fix.
 
         Claude Code sends parameters as JSON strings, while Claude Desktop sends objects.
-        This validator handles both cases automatically.
+        This validator handles both cases automatically and attempts to fix common JSON errors.
         """
         if isinstance(data, str):
+            # Try standard JSON first
             try:
                 return json.loads(data)
             except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid JSON string for diagram parameter: {e}")
+                # Try JSON5 parser (handles single quotes, trailing commas, etc.)
+                try:
+                    import json5
+                    result = json5.loads(data)
+                    logger.info(f"Auto-fixed JSON using json5 parser (handles single quotes, trailing commas, comments)")
+                    return result
+                except Exception as json5_error:
+                    # JSON5 also failed, try manual auto-fix
+                    was_fixed, fixed_json, fix_description = _auto_fix_json(data)
+
+                    if was_fixed:
+                        try:
+                            # Try parsing the manually fixed JSON
+                            result = json.loads(fixed_json)
+                            logger.info(f"Auto-fixed JSON errors: {fix_description}")
+                            return result
+                        except json.JSONDecodeError as e2:
+                            # Manual fix didn't work either, show detailed error
+                            error_msg = _format_json_error(data, e)
+                            raise ValueError(f"Auto-fix attempted ({fix_description}) but failed.\n\n{error_msg}")
+
+                    # No auto-fix possible, show detailed error
+                    error_msg = _format_json_error(data, e)
+                    raise ValueError(error_msg)
         return data
 
 # Element type normalization mapping - input formats to internal format
@@ -1452,10 +1642,10 @@ def _validate_png_file(png_file_path: Path) -> tuple[bool, str]:
         return False, f"PNG validation error: {str(e)}"
 
 # Core MCP Tools
-@mcp.tool()
-def create_archimate_diagram(diagram: DiagramInput) -> str:
-    """Generate production-ready ArchiMate diagrams with comprehensive capability discovery.
-    
+
+def _create_archimate_diagram_impl(diagram: DiagramInput) -> str:
+    """Implementation of ArchiMate diagram creation (shared by MCP tool and file loader).
+
     🏗️ COMPLETE ARCHIMATE 3.2 SUPPORT:
     • ALL 55+ elements across 7 layers (Business, Application, Technology, Physical, Motivation, Strategy, Implementation)
     • ALL 12 relationship types with directional variants
@@ -2057,7 +2247,75 @@ The jar should be placed in the project root directory or one of these locations
         # Raise enhanced error with comprehensive debugging information
         raise ArchiMateGenerationError(enhanced_error_info)
 
+
+@mcp.tool()
+def create_archimate_diagram(diagram: DiagramInput) -> str:
+    """Generate production-ready ArchiMate diagrams with comprehensive capability discovery.
+
+    This is the main MCP tool for creating ArchiMate diagrams. For full documentation
+    see the implementation function _create_archimate_diagram_impl.
+    """
+    return _create_archimate_diagram_impl(diagram)
+
+
 # Removed validate_archimate_model - not needed in simplified API
+
+def _load_diagram_from_file_impl(file_path: str) -> str:
+    """Implementation of load diagram from file."""
+    try:
+        from pathlib import Path
+
+        # Resolve file path
+        json_file = Path(file_path)
+        if not json_file.is_absolute():
+            # Try relative to current directory
+            json_file = Path.cwd() / file_path
+
+        # Check if file exists
+        if not json_file.exists():
+            return f"❌ Error: File not found: {json_file}\n\nSearched in: {Path.cwd()}"
+
+        # Read file
+        logger.info(f"Loading diagram from file: {json_file}")
+        with open(json_file, 'r', encoding='utf-8') as f:
+            json_content = f.read()
+
+        # Parse as DiagramInput (will use json5 auto-fix)
+        diagram = DiagramInput.model_validate(json_content)
+
+        logger.info(f"Successfully loaded diagram from file: {json_file.name}")
+        logger.info(f"  Title: {diagram.title}")
+        logger.info(f"  Elements: {len(diagram.elements)}")
+        logger.info(f"  Relationships: {len(diagram.relationships)}")
+
+        # Call the actual diagram creation function directly
+        # The decorator doesn't prevent direct calls in Python
+        return _create_archimate_diagram_impl(diagram)
+
+    except FileNotFoundError as e:
+        return f"❌ Error: File not found: {file_path}\n\nDetails: {str(e)}"
+    except Exception as e:
+        logger.error(f"Error loading diagram from file: {e}")
+        return f"❌ Error loading diagram from file:\n\n{str(e)}"
+
+
+@mcp.tool()
+def create_diagram_from_file(file_path: str) -> str:
+    """Load ArchiMate diagram from JSON file and generate diagram.
+
+    Args:
+        file_path: Path to JSON file containing diagram specification.
+                  Can be absolute or relative to current directory.
+
+    Returns:
+        Same as create_archimate_diagram - diagram generation results
+
+    Example:
+        file_path: "examples/flower_business_corrected.json"
+        file_path: "C:/Users/Admin/Desktop/my_diagram.json"
+    """
+    return _load_diagram_from_file_impl(file_path)
+
 
 # Debug tools
 
