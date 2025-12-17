@@ -236,27 +236,30 @@ class TestDiagramValidation:
 class TestPlantUMLValidation:
     """Test PlantUML validation error scenarios."""
     
-    @patch('subprocess.run')
-    def test_validate_plantuml_renders_timeout(self, mock_run):
+    @patch('subprocess.Popen')
+    def test_validate_plantuml_renders_timeout(self, mock_popen):
         """Test PlantUML validation timeout."""
         from archi_mcp.server import validate_plantuml_renders
         import subprocess
-        
-        # Mock timeout exception
-        mock_run.side_effect = subprocess.TimeoutExpired('plantuml', 30)
-        
+
+        # Create mock process that times out
+        mock_process = Mock()
+        mock_process.wait.side_effect = subprocess.TimeoutExpired('plantuml', 30)
+        mock_process.communicate.return_value = ("", "")
+        mock_popen.return_value = mock_process
+
         renders_ok, error_msg = validate_plantuml_renders("@startuml\ntest\n@enduml")
         assert not renders_ok
         assert len(error_msg) > 0
     
-    @patch('subprocess.run')
-    def test_validate_plantuml_renders_file_not_found(self, mock_run):
+    @patch('archi_mcp.server.plantuml_validator.find_plantuml_jar')
+    def test_validate_plantuml_renders_file_not_found(self, mock_find_jar):
         """Test PlantUML validation when jar not found."""
         from archi_mcp.server import validate_plantuml_renders
-        
-        # Mock FileNotFoundError 
-        mock_run.side_effect = FileNotFoundError("plantuml.jar not found")
-        
+
+        # Mock find_plantuml_jar to return None (jar not found)
+        mock_find_jar.return_value = None
+
         renders_ok, error_msg = validate_plantuml_renders("@startuml\ntest\n@enduml")
         assert not renders_ok
         assert len(error_msg) > 0

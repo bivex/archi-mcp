@@ -318,7 +318,7 @@ class TestArchiMateValidator:
             id="access_test",
             from_element="active",
             to_element="passive",
-            relationship_type=RelationshipType.ACCESS
+            relationship_type=ArchiMateRelationshipType.ACCESS
         )
         
         errors = validator._check_relationship_compatibility(
