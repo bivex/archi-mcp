@@ -12,6 +12,7 @@ from archi_mcp.archimate.elements import (
     ImplementationElement,
     ARCHIMATE_ELEMENTS,
 )
+from archi_mcp.archimate.elements.factories.business_factory import BusinessElementFactory
 from archi_mcp.archimate.elements.base import ArchiMateLayer, ArchiMateAspect
 
 
@@ -100,7 +101,8 @@ class TestBusinessElements:
     
     def test_business_actor_creation(self):
         """Test Business Actor creation."""
-        actor = BusinessElement.create_business_actor(
+        from archi_mcp.archimate.elements.factories.business_factory import BusinessElementFactory
+        actor = BusinessElementFactory.create_business_actor(
             id="customer",
             name="Customer",
             description="Bank customer"
@@ -113,7 +115,7 @@ class TestBusinessElements:
     
     def test_business_service_creation(self):
         """Test Business Service creation."""
-        service = BusinessElement.create_business_service(
+        service = BusinessElementFactory.create_business_service(
             id="account_mgmt",
             name="Account Management",
             description="Account management services"
@@ -125,7 +127,7 @@ class TestBusinessElements:
     
     def test_business_object_creation(self):
         """Test Business Object creation."""
-        obj = BusinessElement.create_business_object(
+        obj = BusinessElementFactory.create_business_object(
             id="contract",
             name="Service Contract",
             description="Customer service contract"
@@ -141,9 +143,12 @@ class TestApplicationElements:
     
     def test_application_component_creation(self):
         """Test Application Component creation."""
-        component = ApplicationElement.create_application_component(
+        component = ApplicationElement(
             id="web_app",
             name="Web Application",
+            element_type="Component",
+            layer=ArchiMateLayer.APPLICATION,
+            aspect=ArchiMateAspect.ACTIVE_STRUCTURE,
             description="Customer-facing web application"
         )
         
@@ -153,9 +158,12 @@ class TestApplicationElements:
     
     def test_application_service_creation(self):
         """Test Application Service creation."""
-        service = ApplicationElement.create_application_service(
+        service = ApplicationElement(
             id="user_service",
             name="User Service",
+            element_type="Service",
+            layer=ArchiMateLayer.APPLICATION,
+            aspect=ArchiMateAspect.BEHAVIOR,
             description="User management service"
         )
         
@@ -165,9 +173,12 @@ class TestApplicationElements:
     
     def test_data_object_creation(self):
         """Test Data Object creation."""
-        data = ApplicationElement.create_data_object(
+        data = ApplicationElement(
             id="user_data",
             name="User Database",
+            element_type="DataObject",
+            layer=ArchiMateLayer.APPLICATION,
+            aspect=ArchiMateAspect.PASSIVE_STRUCTURE,
             description="User information storage"
         )
         
@@ -181,9 +192,12 @@ class TestTechnologyElements:
     
     def test_node_creation(self):
         """Test Node creation."""
-        node = TechnologyElement.create_node(
+        node = TechnologyElement(
             id="app_server",
             name="Application Server",
+            element_type="Node",
+            layer=ArchiMateLayer.TECHNOLOGY,
+            aspect=ArchiMateAspect.ACTIVE_STRUCTURE,
             description="Main application server"
         )
         
@@ -193,9 +207,12 @@ class TestTechnologyElements:
     
     def test_device_creation(self):
         """Test Device creation."""
-        device = TechnologyElement.create_device(
+        device = TechnologyElement(
             id="database_server",
             name="Database Server",
+            element_type="Device",
+            layer=ArchiMateLayer.TECHNOLOGY,
+            aspect=ArchiMateAspect.ACTIVE_STRUCTURE,
             description="Database hardware"
         )
         
@@ -205,9 +222,12 @@ class TestTechnologyElements:
     
     def test_artifact_creation(self):
         """Test Artifact creation."""
-        artifact = TechnologyElement.create_artifact(
+        artifact = TechnologyElement(
             id="config_file",
             name="Configuration File",
+            element_type="Artifact",
+            layer=ArchiMateLayer.TECHNOLOGY,
+            aspect=ArchiMateAspect.PASSIVE_STRUCTURE,
             description="Application configuration"
         )
         
@@ -221,9 +241,12 @@ class TestPhysicalElements:
     
     def test_equipment_creation(self):
         """Test Equipment creation."""
-        equipment = PhysicalElement.create_equipment(
+        equipment = PhysicalElement(
             id="rack_server",
             name="Rack Server",
+            element_type="Equipment",
+            layer=ArchiMateLayer.PHYSICAL,
+            aspect=ArchiMateAspect.ACTIVE_STRUCTURE,
             description="Physical server hardware"
         )
         
@@ -233,9 +256,12 @@ class TestPhysicalElements:
     
     def test_facility_creation(self):
         """Test Facility creation."""
-        facility = PhysicalElement.create_facility(
+        facility = PhysicalElement(
             id="data_center",
             name="Data Center",
+            element_type="Facility",
+            layer=ArchiMateLayer.PHYSICAL,
+            aspect=ArchiMateAspect.ACTIVE_STRUCTURE,
             description="Primary data center facility"
         )
         
@@ -249,9 +275,12 @@ class TestMotivationElements:
     
     def test_stakeholder_creation(self):
         """Test Stakeholder creation."""
-        stakeholder = MotivationElement.create_stakeholder(
+        stakeholder = MotivationElement(
             id="business_owner",
             name="Business Owner",
+            element_type="Stakeholder",
+            layer=ArchiMateLayer.MOTIVATION,
+            aspect=ArchiMateAspect.ACTIVE_STRUCTURE,
             description="Product business owner"
         )
         
@@ -261,9 +290,12 @@ class TestMotivationElements:
     
     def test_goal_creation(self):
         """Test Goal creation."""
-        goal = MotivationElement.create_goal(
+        goal = MotivationElement(
             id="improve_efficiency",
             name="Improve Efficiency",
+            element_type="Goal",
+            layer=ArchiMateLayer.MOTIVATION,
+            aspect=ArchiMateAspect.BEHAVIOR,
             description="Increase operational efficiency"
         )
         
@@ -273,9 +305,12 @@ class TestMotivationElements:
     
     def test_requirement_creation(self):
         """Test Requirement creation."""
-        requirement = MotivationElement.create_requirement(
+        requirement = MotivationElement(
             id="performance_req",
             name="Performance Requirement",
+            element_type="Requirement",
+            layer=ArchiMateLayer.MOTIVATION,
+            aspect=ArchiMateAspect.BEHAVIOR,
             description="System performance requirements"
         )
         
@@ -289,9 +324,12 @@ class TestStrategyElements:
     
     def test_capability_creation(self):
         """Test Capability creation."""
-        capability = StrategyElement.create_capability(
+        capability = StrategyElement(
             id="data_analytics",
             name="Data Analytics",
+            element_type="Capability",
+            layer=ArchiMateLayer.STRATEGY,
+            aspect=ArchiMateAspect.BEHAVIOR,
             description="Data analysis capability"
         )
         
@@ -301,9 +339,12 @@ class TestStrategyElements:
     
     def test_resource_creation(self):
         """Test Resource creation."""
-        resource = StrategyElement.create_resource(
+        resource = StrategyElement(
             id="dev_team",
             name="Development Team",
+            element_type="Resource",
+            layer=ArchiMateLayer.STRATEGY,
+            aspect=ArchiMateAspect.ACTIVE_STRUCTURE,
             description="Software development team"
         )
         
@@ -317,9 +358,12 @@ class TestImplementationElements:
     
     def test_work_package_creation(self):
         """Test Work Package creation."""
-        work_package = ImplementationElement.create_work_package(
+        work_package = ImplementationElement(
             id="migration_project",
             name="System Migration",
+            element_type="Work_Package",
+            layer=ArchiMateLayer.IMPLEMENTATION,
+            aspect=ArchiMateAspect.BEHAVIOR,
             description="Legacy system migration project"
         )
         
@@ -329,9 +373,12 @@ class TestImplementationElements:
     
     def test_deliverable_creation(self):
         """Test Deliverable creation."""
-        deliverable = ImplementationElement.create_deliverable(
+        deliverable = ImplementationElement(
             id="migration_plan",
             name="Migration Plan",
+            element_type="Deliverable",
+            layer=ArchiMateLayer.IMPLEMENTATION,
+            aspect=ArchiMateAspect.PASSIVE_STRUCTURE,
             description="Detailed migration plan document"
         )
         

@@ -298,7 +298,7 @@ def _save_failed_attempt(plantuml_code: str, diagram_input: DiagramInput, debug_
         logger.warning(f"Could not save debug log: {log_error}")
 
 
-def _create_archimate_diagram_impl(diagram: DiagramInput) -> str:
+def create_archimate_diagram_impl(diagram: DiagramInput) -> str:
     """Implementation of ArchiMate diagram creation."""
     debug_log = []
     start_time = time.time()
@@ -362,7 +362,7 @@ def _create_archimate_diagram_impl(diagram: DiagramInput) -> str:
         raise ArchiMateError(enhanced_error)
 
 
-def _load_diagram_from_file_impl(file_path: str) -> str:
+def load_diagram_from_file_impl(file_path: str) -> str:
     """Implementation of load diagram from file."""
     try:
         from pathlib import Path
@@ -399,7 +399,7 @@ def _load_diagram_from_file_impl(file_path: str) -> str:
         logger.info(f"  Relationships: {len(diagram.relationships)}")
 
         # Call the actual diagram creation function directly
-        return _create_archimate_diagram_impl(diagram)
+        return create_archimate_diagram_impl(diagram)
 
     except FileNotFoundError as e:
         return f"❌ Error: File not found: {file_path}\n\nDetails: {str(e)}"

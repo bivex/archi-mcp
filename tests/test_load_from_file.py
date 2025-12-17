@@ -16,7 +16,7 @@ if sys.platform == 'win32':
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from archi_mcp import server
+from archi_mcp.server import diagram_engine
 
 
 def test_load_from_corrected_example():
@@ -26,7 +26,7 @@ def test_load_from_corrected_example():
     print("="*80)
 
     # Use the implementation function directly
-    result = server._load_diagram_from_file_impl("examples/flower_business_corrected.json")
+    result = diagram_engine.load_diagram_from_file_impl("examples/flower_business_corrected.json")
 
     print("\nResult (first 500 chars):")
     print(result[:500] + "...")
@@ -43,7 +43,7 @@ def test_load_nonexistent_file():
     print("TEST: Load from non-existent file")
     print("="*80)
 
-    result = server._load_diagram_from_file_impl("nonexistent.json")
+    result = diagram_engine.load_diagram_from_file_impl("nonexistent.json")
 
     print("\nResult:")
     print(result)
@@ -59,7 +59,7 @@ def test_load_absolute_path():
     print("="*80)
 
     # Use relative path to example
-    result = server._load_diagram_from_file_impl("examples/flower_business_corrected.json")
+    result = diagram_engine.load_diagram_from_file_impl("examples/flower_business_corrected.json")
 
     print("\nResult (first 500 chars):")
     print(result[:500] + "...")

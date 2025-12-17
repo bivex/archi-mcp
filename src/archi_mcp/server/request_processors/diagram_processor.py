@@ -55,7 +55,7 @@ from ..main import mcp
 logger = get_logger(__name__)
 
 # Import the implementation functions directly from the diagram engine
-from ..diagram_engine import _create_archimate_diagram_impl, _load_diagram_from_file_impl
+from ..diagram_engine import create_archimate_diagram_impl, load_diagram_from_file_impl
 
 # Ensure DiagramInput is available in global namespace for MCP decorators
 import sys
@@ -68,12 +68,12 @@ def create_archimate_diagram(diagram: dict) -> str:
     """Generate production-ready ArchiMate diagrams with comprehensive capability discovery.
 
     This is the main MCP tool for creating ArchiMate diagrams. For full documentation
-    see the implementation function _create_archimate_diagram_impl.
+    see the implementation function create_archimate_diagram_impl.
     """
     try:
         # Convert dictionary to DiagramInput object
         diagram_input = DiagramInput.model_validate(diagram)
-        return _create_archimate_diagram_impl(diagram_input)
+        return create_archimate_diagram_impl(diagram_input)
     except Exception as e:
         logger.error(f"Error creating ArchiMate diagram: {e}")
         raise ArchiMateError(f"Failed to create ArchiMate diagram: {str(e)}")
@@ -90,7 +90,7 @@ def create_diagram_from_file(file_path: str) -> str:
         Success message with diagram details and file locations.
     """
     try:
-        return _load_diagram_from_file_impl(file_path)
+        return load_diagram_from_file_impl(file_path)
     except Exception as e:
         logger.error(f"Error loading diagram from file: {e}")
         return f"❌ Error loading diagram from file:\n\n{str(e)}"
