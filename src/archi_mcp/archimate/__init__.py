@@ -11,7 +11,7 @@ from .elements import (
     ImplementationElement,
     ARCHIMATE_ELEMENTS,
 )
-from .relationships import ArchiMateRelationship, ARCHIMATE_RELATIONSHIPS
+from .relationships import ArchiMateRelationship, ARCHIMATE_RELATIONSHIPS, RelationshipDirection, create_relationship
 from .generator import ArchiMateGenerator
 from .validator import ArchiMateValidator
 

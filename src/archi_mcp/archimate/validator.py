@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Optional, Set, Tuple
 from .elements.base import ArchiMateElement, ArchiMateLayer
-from .relationships import ArchiMateRelationship, RelationshipType
+from .relationships import ArchiMateRelationship, ArchiMateRelationshipType
 from ..utils.exceptions import ArchiMateValidationError
 
 
@@ -154,7 +154,7 @@ class ArchiMateValidator:
         # For now, we'll implement basic rules
         # A full implementation would check the complete ArchiMate relationship matrix
         
-        if rel_type == RelationshipType.ACCESS:
+        if rel_type == ArchiMateRelationshipType.ACCESS:
             # Access typically from active structure to passive structure
             if (from_elem.aspect.value != "Active Structure" or 
                 to_elem.aspect.value != "Passive Structure"):
@@ -162,7 +162,7 @@ class ArchiMateValidator:
                     f"Access relationship should connect Active Structure to Passive Structure"
                 )
         
-        elif rel_type == RelationshipType.ASSIGNMENT:
+        elif rel_type == ArchiMateRelationshipType.ASSIGNMENT:
             # Assignment typically from active structure to behavior
             if (from_elem.aspect.value != "Active Structure" or 
                 to_elem.aspect.value != "Behavior"):
@@ -170,7 +170,7 @@ class ArchiMateValidator:
                     f"Assignment relationship should connect Active Structure to Behavior"
                 )
         
-        elif rel_type == RelationshipType.SERVING:
+        elif rel_type == ArchiMateRelationshipType.SERVING:
             # Serving can cross layers but has specific patterns
             if from_elem.layer == to_elem.layer:
                 # Same layer - check aspects
@@ -245,7 +245,7 @@ class ArchiMateValidator:
         self,
         from_element: ArchiMateElement,
         to_element: ArchiMateElement
-    ) -> List[RelationshipType]:
+    ) -> List[ArchiMateRelationshipType]:
         """Get list of valid relationship types between two elements.
         
         Args:
@@ -260,20 +260,20 @@ class ArchiMateValidator:
         valid_relationships = []
         
         # Association is generally valid between most elements
-        valid_relationships.append(RelationshipType.ASSOCIATION)
+        valid_relationships.append(ArchiMateRelationshipType.ASSOCIATION)
         
         # Serving is common for services
         if "Service" in from_element.element_type:
-            valid_relationships.append(RelationshipType.SERVING)
+            valid_relationships.append(ArchiMateRelationshipType.SERVING)
         
         # Realization for implementation relationships
         if (from_element.layer.value in ["Application", "Technology"] and
             to_element.layer.value == "Business"):
-            valid_relationships.append(RelationshipType.REALIZATION)
+            valid_relationships.append(ArchiMateRelationshipType.REALIZATION)
         
         # Access for data/object access
         if (from_element.aspect.value == "Active Structure" and
             to_element.aspect.value == "Passive Structure"):
-            valid_relationships.append(RelationshipType.ACCESS)
+            valid_relationships.append(ArchiMateRelationshipType.ACCESS)
         
         return valid_relationships

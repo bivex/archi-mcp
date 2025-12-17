@@ -1,9 +1,10 @@
 """Strategy layer ArchiMate elements."""
 
-from .base import ArchiMateElement, ArchiMateLayer, ArchiMateAspect
+from .abstract.supporting import SupportingLayerElement
+from .base import ArchiMateLayer, ArchiMateAspect
 
 
-class StrategyElement(ArchiMateElement):
+class StrategyElement(SupportingLayerElement):
     """Base class for Strategy layer elements."""
     
     layer: ArchiMateLayer = ArchiMateLayer.STRATEGY

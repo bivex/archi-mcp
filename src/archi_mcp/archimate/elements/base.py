@@ -1,7 +1,7 @@
 """Base ArchiMate element definition."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 from pydantic import BaseModel, Field
 
 
@@ -15,12 +15,78 @@ class ArchiMateLayer(str, Enum):
     STRATEGY = "Strategy"
     IMPLEMENTATION = "Implementation"
 
+    @classmethod
+    def get_core_layers(cls) -> Set['ArchiMateLayer']:
+        """Get the three core operational layers."""
+        return {cls.BUSINESS, cls.APPLICATION, cls.TECHNOLOGY}
+
+    @classmethod
+    def get_governance_layers(cls) -> Set['ArchiMateLayer']:
+        """Get the governance layers."""
+        return {cls.MOTIVATION, cls.STRATEGY}
+
+    @classmethod
+    def get_realization_layers(cls) -> Set['ArchiMateLayer']:
+        """Get the realization layers."""
+        return {cls.IMPLEMENTATION, cls.PHYSICAL}
+
+    def get_layer_description(self) -> str:
+        """Get a human-readable description of this layer."""
+        descriptions = {
+            ArchiMateLayer.BUSINESS: "Business operations and processes",
+            ArchiMateLayer.APPLICATION: "Application services and components",
+            ArchiMateLayer.TECHNOLOGY: "Technology infrastructure and platforms",
+            ArchiMateLayer.PHYSICAL: "Physical infrastructure and facilities",
+            ArchiMateLayer.MOTIVATION: "Motivational drivers and requirements",
+            ArchiMateLayer.STRATEGY: "Strategic capabilities and resources",
+            ArchiMateLayer.IMPLEMENTATION: "Implementation projects and deliverables"
+        }
+        return descriptions.get(self, "Layer")
+
+    def get_layer_color(self) -> str:
+        """Get the default PlantUML color for this layer."""
+        colors = {
+            cls.BUSINESS: "Business",
+            cls.APPLICATION: "Application",
+            cls.TECHNOLOGY: "Technology",
+            cls.PHYSICAL: "Physical",
+            cls.MOTIVATION: "Motivation",
+            cls.STRATEGY: "Strategy",
+            cls.IMPLEMENTATION: "Implementation",
+        }
+        return colors.get(self, "Technology")
+
+    def is_core_layer(self) -> bool:
+        """Check if this is a core operational layer."""
+        return self in self.get_core_layers()
+
+    def is_governance_layer(self) -> bool:
+        """Check if this is a governance layer."""
+        return self in self.get_governance_layers()
+
+    def is_realization_layer(self) -> bool:
+        """Check if this is a realization layer."""
+        return self in self.get_realization_layers()
+
 
 class ArchiMateAspect(str, Enum):
     """ArchiMate aspects according to ArchiMate 3.2 specification."""
     ACTIVE_STRUCTURE = "Active Structure"
     PASSIVE_STRUCTURE = "Passive Structure"
     BEHAVIOR = "Behavior"
+
+    def get_aspect_description(self) -> str:
+        """Get a human-readable description of this aspect."""
+        descriptions = {
+            self.ACTIVE_STRUCTURE: "Elements that exhibit behavior and have agency",
+            self.PASSIVE_STRUCTURE: "Elements that represent knowledge or data",
+            self.BEHAVIOR: "Elements that represent behavior and processes"
+        }
+        return descriptions.get(self, "Aspect")
+
+    def is_structure_aspect(self) -> bool:
+        """Check if this is a structural aspect."""
+        return self in {self.ACTIVE_STRUCTURE, self.PASSIVE_STRUCTURE}
 
 
 class ArchiMateElement(BaseModel):
@@ -72,20 +138,11 @@ class ArchiMateElement(BaseModel):
     
     def _get_layer_color(self) -> str:
         """Get the default color for this layer.
-        
+
         Returns:
             Color string for PlantUML
         """
-        layer_colors = {
-            ArchiMateLayer.BUSINESS: "Business",
-            ArchiMateLayer.APPLICATION: "Application", 
-            ArchiMateLayer.TECHNOLOGY: "Technology",
-            ArchiMateLayer.PHYSICAL: "Physical",
-            ArchiMateLayer.MOTIVATION: "Motivation",
-            ArchiMateLayer.STRATEGY: "Strategy",
-            ArchiMateLayer.IMPLEMENTATION: "Implementation",
-        }
-        return layer_colors.get(self.layer, "Technology")
+        return self.layer.get_layer_color()
     
     def _normalize_element_type(self, element_type: str) -> str:
         """Normalize element type for PlantUML compatibility.

@@ -1,9 +1,10 @@
 """Motivation layer ArchiMate elements."""
 
-from .base import ArchiMateElement, ArchiMateLayer, ArchiMateAspect
+from .abstract.supporting import SupportingLayerElement
+from .base import ArchiMateLayer, ArchiMateAspect
 
 
-class MotivationElement(ArchiMateElement):
+class MotivationElement(SupportingLayerElement):
     """Base class for Motivation layer elements."""
     
     layer: ArchiMateLayer = ArchiMateLayer.MOTIVATION

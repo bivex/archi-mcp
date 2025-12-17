@@ -49,6 +49,8 @@ from .archimate import (
 from .archimate.generator import DiagramLayout
 from .archimate.elements.base import ArchiMateLayer, ArchiMateAspect
 from .i18n import ArchiMateTranslator, AVAILABLE_LANGUAGES
+from .server.error_handler import _build_enhanced_error_response
+from .server.export_manager import get_exports_directory, create_export_directory, cleanup_failed_exports
 
 
 def translate_relationship_labels(diagram, translator: ArchiMateTranslator) -> None:
@@ -663,19 +665,6 @@ VALID_RELATIONSHIPS = [
     "Serving", "Specialization", "Triggering"
 ]
 
-# Helper functions for exports directory
-def get_exports_directory() -> Path:
-    """Get the exports directory path, creating it if needed."""
-    exports_dir = Path.cwd() / "exports"
-    exports_dir.mkdir(exist_ok=True)
-    return exports_dir
-
-def create_export_directory() -> Path:
-    """Create a timestamped directory for diagram exports."""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    export_dir = get_exports_directory() / timestamp
-    export_dir.mkdir(parents=True, exist_ok=True)
-    return export_dir
 
 
 def detect_language_from_content(diagram: DiagramInput) -> str:
@@ -710,103 +699,6 @@ def save_debug_log(export_dir: Path, log_entries: List[Dict[str, Any]]) -> Path:
     
     return log_file
 
-def _extract_plantuml_error_details(debug_log: list) -> tuple[int, str, str, int]:
-    """Extract PlantUML error details from debug log."""
-    plantuml_return_code = None
-    plantuml_stderr = None
-    plantuml_command = None
-    error_line = None
-
-    for entry in debug_log:
-        if 'details' in entry:
-            details = entry['details']
-            # Extract PlantUML execution details
-            if 'png_return_code' in details:
-                plantuml_return_code = details['png_return_code']
-            if 'command' in details and 'plantuml.jar' in details['command']:
-                plantuml_command = details['command']
-            output = details.get('output', '')
-            has_error_line = 'Error line' in output
-            has_diagram_errors = 'Some diagram description contains errors' in output
-            if output and (has_error_line or has_diagram_errors):
-                plantuml_stderr = details['output']
-                # Extract line number from error
-                if 'Error line' in details['output']:
-                    import re
-                    line_match = re.search(r'Error line (\d+)', details['output'])
-                    if line_match:
-                        error_line = int(line_match.group(1))
-
-    return plantuml_return_code, plantuml_stderr, plantuml_command, error_line
-
-
-def _add_error_context_and_debug_info(error_parts: list, plantuml_code: str, error_line: int, error_export_dir: str):
-    """Add problematic line context and debug information to error message."""
-    # Add problematic PlantUML line if available
-    if plantuml_code and error_line:
-        lines = plantuml_code.split('\n')
-        if 1 <= error_line <= len(lines):
-            problematic_line = lines[error_line - 1].strip()
-            error_parts.append(f"**Problematic Line {error_line}:** `{problematic_line}`")
-
-            # Add context (line before and after)
-            context_lines = []
-            if error_line > 1:
-                context_lines.append(f"{error_line-1:2d}: {lines[error_line-2].strip()}")
-            context_lines.append(f"{error_line:2d}: {problematic_line} ⚠️")
-            if error_line < len(lines):
-                context_lines.append(f"{error_line+1:2d}: {lines[error_line].strip()}")
-
-            error_parts.append("**Context:**")
-            error_parts.append("```")
-            error_parts.extend(context_lines)
-            error_parts.append("```")
-
-    # Add debugging information with actual log contents
-    if error_export_dir:
-        # Try to read and include generation.log contents
-        try:
-            log_file_path = os.path.join(error_export_dir, "generation.log")
-            if os.path.exists(log_file_path):
-                with open(log_file_path, 'r', encoding='utf-8') as f:
-                    log_contents = f.read()
-                error_parts.append("**🔍 Debug Log:**")
-                error_parts.append("```")
-                error_parts.append(log_contents)
-                error_parts.append("```")
-            else:
-                error_parts.append(f"**🔍 Debug Files:** {error_export_dir}")
-                error_parts.append("- `generation.log` - Complete debug trace")
-        except Exception as log_read_error:
-            error_parts.append(f"**🔍 Debug Files:** {error_export_dir} (log read error: {log_read_error})")
-            error_parts.append("- `generation.log` - Complete debug trace")
-
-        if plantuml_code:
-            error_parts.append("**📄 Debug Files Available:**")
-            error_parts.append(f"- `{error_export_dir}/diagram.puml` - Generated PlantUML code")
-            error_parts.append(f"- `{error_export_dir}/input.json` - Original input data")
-
-
-def _add_troubleshooting_suggestions(error_parts: list, plantuml_code: str, error_line: int, plantuml_command: str):
-    """Add troubleshooting suggestions to error message."""
-    error_parts.append("**🛠️ Troubleshooting:**")
-    if error_line and plantuml_code:
-        lines = plantuml_code.split('\n')
-        if 1 <= error_line <= len(lines):
-            problematic_line = lines[error_line - 1].strip()
-            if "Application_Application_" in problematic_line:
-                error_parts.append("- **Duplicate layer prefix detected** - This is a known issue being fixed")
-            elif "_" not in problematic_line and "(" in problematic_line:
-                error_parts.append("- **Missing element type prefix** - Check element type normalization")
-            else:
-                error_parts.append("- Check PlantUML syntax on the problematic line")
-                error_parts.append("- Verify element types and relationship syntax")
-
-    if plantuml_command:
-        error_parts.append(f"- **Test PlantUML directly:** `{plantuml_command.replace('/tmp/tmp', 'path/to/diagram')}`")
-
-
-def _build_enhanced_error_response(original_error: Exception, debug_log: list, error_export_dir, plantuml_code: str = None) -> str:
     """Build comprehensive error response with debugging information for MCP tool."""
     try:
         # Extract PlantUML error details
@@ -881,32 +773,6 @@ def _save_failed_attempt(plantuml_code: str, diagram_input: DiagramInput, debug_
     except Exception as save_error:
         logger.error(f"Failed to save failure context: {save_error}")
 
-def cleanup_failed_exports() -> None:
-    """Move failed export attempts to failed_attempts subdirectory after successful PNG generation."""
-    exports_dir = get_exports_directory()
-    failed_attempts_dir = exports_dir / "failed_attempts"
-    
-    # Find all export directories
-    export_subdirs = [d for d in exports_dir.iterdir() if d.is_dir() and d.name != "failed_attempts"]
-    
-    # Identify failed exports (no PNG file)
-    failed_dirs = []
-    for export_dir in export_subdirs:
-        png_file = export_dir / "diagram.png"
-        if not png_file.exists():
-            failed_dirs.append(export_dir)
-    
-    # Move failed attempts to failed_attempts directory
-    if failed_dirs:
-        failed_attempts_dir.mkdir(exist_ok=True)
-        
-        for failed_dir in failed_dirs:
-            destination = failed_attempts_dir / failed_dir.name
-            try:
-                failed_dir.rename(destination)
-                print(f"Moved failed export: {failed_dir.name} -> failed_attempts/")
-            except Exception as e:
-                print(f"Warning: Could not move {failed_dir.name}: {e}")
 
 def _add_markdown_header(md_content: list, title: str, description: str, png_filename: str, translator):
     """Add header section to markdown content."""
@@ -2248,8 +2114,13 @@ def _create_archimate_diagram_impl(diagram: DiagramInput) -> str:
         raise ArchiMateError(enhanced_error_info)
 
 
-@mcp.tool()
-def create_archimate_diagram(diagram: DiagramInput) -> str:
+# Import tools from request processors
+from .server.request_processors.diagram_processor import create_archimate_diagram, create_diagram_from_file, test_element_normalization
+
+# Re-export for backward compatibility
+create_archimate_diagram_tool = create_archimate_diagram
+create_diagram_from_file_tool = create_diagram_from_file
+test_element_normalization_tool = test_element_normalization
     """Generate production-ready ArchiMate diagrams with comprehensive capability discovery.
 
     This is the main MCP tool for creating ArchiMate diagrams. For full documentation
@@ -2299,60 +2170,9 @@ def _load_diagram_from_file_impl(file_path: str) -> str:
         return f"❌ Error loading diagram from file:\n\n{str(e)}"
 
 
-@mcp.tool()
-def create_diagram_from_file(file_path: str) -> str:
-    """Load ArchiMate diagram from JSON file and generate diagram.
-
-    Args:
-        file_path: Path to JSON file containing diagram specification.
-                  Can be absolute or relative to current directory.
-
-    Returns:
-        Same as create_archimate_diagram - diagram generation results
-
-    Example:
-        file_path: "examples/flower_business_corrected.json"
-        file_path: "C:/Users/Admin/Desktop/my_diagram.json"
-    """
-    return _load_diagram_from_file_impl(file_path)
-
-
-# Debug tools
-
-@mcp.tool()
-def test_element_normalization() -> str:
+# Tool definitions are now in request_processors.diagram_processor
     """Test element type normalization across all ArchiMate layers."""
     try:
-        test_results = []
-        
-        # Test common element types
-        test_elements = [
-            ("function", "Business"),
-            ("process", "Business"),
-            ("stakeholder", "Motivation"),
-            ("Business_Actor", "Business"),
-            ("Application_Component", "Application"),
-            ("Node", "Technology"),
-            ("Work_Package", "Implementation")
-        ]
-        
-        for element_type, layer in test_elements:
-            normalized_type = normalize_element_type(element_type)
-            normalized_layer = normalize_layer(layer)
-            
-            is_valid_type = normalized_type in ELEMENT_TYPE_MAPPING.values()
-            is_valid_layer = normalized_layer in VALID_LAYERS.values()
-            
-            status = "✅" if (is_valid_type and is_valid_layer) else "❌"
-            test_results.append(f"{status} {element_type} ({layer}) → {normalized_type} ({normalized_layer})")
-        
-        result = "🧪 **Element Normalization Test Results**\n\n"
-        result += "\n".join(test_results)
-        
-        return result
-        
-    except Exception as e:
-        return f"❌ Test failed: {str(e)}"
 
 # Removed get_debug_log_info - not needed in simplified API
 
@@ -2360,19 +2180,8 @@ def test_element_normalization() -> str:
 
 
 
-# Server startup
-def main():
-    """Main entry point for the ArchiMate MCP server."""
-    logger.info("Starting ArchiMate MCP Server with FastMCP")
-    logger.info(f"Available tools: create_archimate_diagram, test_element_normalization")
-    
-    try:
-        mcp.run()
-    except KeyboardInterrupt:
-        logger.info("Server interrupted by user")
-    except Exception as e:
-        logger.error(f"Server error: {e}")
-        raise
+# Import main server implementation
+from .server.main import main
 
 if __name__ == "__main__":
     main()

@@ -17,6 +17,6 @@ __author__ = "Mgr. Patrik Skovajsa, Claude Code Assistant"
 __email__ = ""
 __license__ = "MIT"
 
-from .server import mcp
+from .server.main import mcp
 
 __all__ = ["mcp"]

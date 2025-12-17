@@ -1,0 +1,16 @@
+"""Main ArchiMate MCP Server implementation."""
+
+import logging
+from fastmcp import FastMCP
+
+from ..utils.logging import setup_logging, get_logger
+
+# Initialize MCP server
+mcp = FastMCP("archi-mate")
+
+# Setup logging
+setup_logging()
+logger = get_logger(__name__)
+
+# Import request processors to register tools
+from . import request_processors  # noqa: F401

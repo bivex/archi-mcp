@@ -13,8 +13,7 @@ import pytest
 import socket
 
 from archi_mcp.server import (
-    find_free_port,
-    start_http_server, 
+    start_http_server,
     http_server_port,
     http_server_thread,
     http_server_running,

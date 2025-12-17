@@ -3,7 +3,7 @@
 import json
 import pytest
 from pydantic import ValidationError
-from archi_mcp.server import DiagramInput, ElementInput
+from archi_mcp.server.models import DiagramInput, ElementInput
 
 
 def test_diagram_input_from_dict():

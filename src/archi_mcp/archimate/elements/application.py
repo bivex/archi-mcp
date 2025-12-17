@@ -1,9 +1,10 @@
 """Application layer ArchiMate elements."""
 
-from .base import ArchiMateElement, ArchiMateLayer, ArchiMateAspect
+from .abstract.core import CoreLayerElement
+from .base import ArchiMateLayer, ArchiMateAspect
 
 
-class ApplicationElement(ArchiMateElement):
+class ApplicationElement(CoreLayerElement):
     """Base class for Application layer elements."""
     
     layer: ArchiMateLayer = ArchiMateLayer.APPLICATION

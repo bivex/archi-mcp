@@ -10,7 +10,7 @@ from archi_mcp.archimate.elements.base import ArchiMateElement, ArchiMateLayer, 
 from archi_mcp.archimate.relationships import ArchiMateRelationship, RelationshipType
 from archi_mcp.archimate.generator import ArchiMateGenerator
 from archi_mcp.archimate.validator import ArchiMateValidator
-from archi_mcp.server import mcp
+from archi_mcp.server.main import mcp
 
 
 @pytest.fixture

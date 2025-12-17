@@ -1,9 +1,10 @@
 """Physical layer ArchiMate elements."""
 
-from .base import ArchiMateElement, ArchiMateLayer, ArchiMateAspect
+from .abstract.implementation import ImplementationLayerElement
+from .base import ArchiMateLayer, ArchiMateAspect
 
 
-class PhysicalElement(ArchiMateElement):
+class PhysicalElement(ImplementationLayerElement):
     """Base class for Physical layer elements."""
     
     layer: ArchiMateLayer = ArchiMateLayer.PHYSICAL
