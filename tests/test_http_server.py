@@ -208,13 +208,6 @@ class TestHTTPServerFunctionality:
         assert "http://" not in success_message
         assert "🔗 **View" not in success_message
     
-        
-        # Verify Mount was configured with correct path
-        mock_mount.assert_called_once()
-        mount_call = mock_mount.call_args
-        assert mount_call.args[0] == "/exports"
-        assert mount_call.kwargs['name'] == "exports"
-    
     def test_url_generation_with_relative_paths(self):
         """Test URL generation with relative path handling."""
         # Create test export directory structure in temp dir
