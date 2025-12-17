@@ -4,6 +4,7 @@ import subprocess
 import time
 import platform
 import os
+import tempfile
 from pathlib import Path
 from typing import Tuple
 
@@ -17,7 +18,7 @@ def _validate_plantuml_renders(plantuml_code: str) -> Tuple[bool, str]:
             return False, "PlantUML JAR file not found. Please install PlantUML."
 
         # Create temporary file for PlantUML code
-        with Path(tempfile.NamedTemporaryFile(mode='w', suffix='.puml', delete=False)) as temp_file:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.puml', delete=False) as temp_file:
             temp_file.write(plantuml_code)
             temp_file_path = temp_file.name
 

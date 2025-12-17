@@ -1,9 +1,147 @@
 """Input validation and normalization functions for ArchiMate elements and relationships."""
 
-from typing import Tuple
+from typing import Tuple, Dict, List
 from ..types import ArchiMateRelationshipType
 from ..archimate import ARCHIMATE_ELEMENTS, ARCHIMATE_RELATIONSHIPS
 from .models import ElementInput, RelationshipInput
+
+
+# Element type mapping for normalization
+ELEMENT_TYPE_MAPPING: Dict[str, str] = {
+    # Business Layer - normalize to internal format (with underscores)
+    "BusinessActor": "Business_Actor",
+    "Business_Actor": "Business_Actor",  # Identity mapping for correct format
+    "BusinessRole": "Business_Role",
+    "Business_Role": "Business_Role",  # Identity mapping
+    "BusinessCollaboration": "Business_Collaboration",
+    "Business_Collaboration": "Business_Collaboration",  # Identity mapping
+    "BusinessInterface": "Business_Interface",
+    "Business_Interface": "Business_Interface",  # Identity mapping
+    "BusinessFunction": "Business_Function",
+    "Business_Function": "Business_Function",  # Identity mapping
+    "BusinessProcess": "Business_Process",
+    "Business_Process": "Business_Process",  # Identity mapping
+    "BusinessEvent": "Business_Event",
+    "Business_Event": "Business_Event",  # Identity mapping
+    "BusinessService": "Business_Service",
+    "Business_Service": "Business_Service",  # Identity mapping
+    "BusinessObject": "Business_Object",
+    "Business_Object": "Business_Object",  # Identity mapping
+    "Contract": "Contract",
+    "Business_Contract": "Contract",  # Normalize to shorter form
+    "Representation": "Representation",
+    "Business_Representation": "Representation",  # Normalize to shorter form
+    "Location": "Location",
+
+    # Application Layer
+    "ApplicationComponent": "Application_Component",
+    "Application_Component": "Application_Component",  # Identity mapping
+    "ApplicationCollaboration": "Application_Collaboration",
+    "Application_Collaboration": "Application_Collaboration",  # Identity mapping
+    "ApplicationInterface": "Application_Interface",
+    "Application_Interface": "Application_Interface",  # Identity mapping
+    "ApplicationFunction": "Application_Function",
+    "Application_Function": "Application_Function",  # Identity mapping
+    "ApplicationInteraction": "Application_Interaction",
+    "Application_Interaction": "Application_Interaction",  # Identity mapping
+    "ApplicationProcess": "Application_Process",
+    "Application_Process": "Application_Process",  # Identity mapping
+    "ApplicationEvent": "Application_Event",
+    "Application_Event": "Application_Event",  # Identity mapping
+    "ApplicationService": "Application_Service",
+    "Application_Service": "Application_Service",  # Identity mapping
+    "DataObject": "Data_Object",
+    "Data_Object": "Data_Object",  # Identity mapping
+
+    # Technology Layer
+    "Node": "Node",
+    "Device": "Device",
+    "SystemSoftware": "System_Software",
+    "System_Software": "System_Software",  # Identity mapping
+    "TechnologyComponent": "Technology_Component",
+    "Technology_Component": "Technology_Component",  # Identity mapping
+    "TechnologyCollaboration": "Technology_Collaboration",
+    "Technology_Collaboration": "Technology_Collaboration",  # Identity mapping
+    "TechnologyInterface": "Technology_Interface",
+    "Technology_Interface": "Technology_Interface",  # Identity mapping
+    "TechnologyFunction": "Technology_Function",
+    "Technology_Function": "Technology_Function",  # Identity mapping
+    "TechnologyProcess": "Technology_Process",
+    "Technology_Process": "Technology_Process",  # Identity mapping
+    "TechnologyInteraction": "Technology_Interaction",
+    "Technology_Interaction": "Technology_Interaction",  # Identity mapping
+    "TechnologyEvent": "Technology_Event",
+    "Technology_Event": "Technology_Event",  # Identity mapping
+    "TechnologyService": "Technology_Service",
+    "Technology_Service": "Technology_Service",  # Identity mapping
+    "Artifact": "Artifact",
+    "CommunicationNetwork": "Communication_Network",
+    "Communication_Network": "Communication_Network",  # Identity mapping
+    "Path": "Path",
+
+    # Physical Layer
+    "Equipment": "Equipment",
+    "Facility": "Facility",
+    "DistributionNetwork": "Distribution_Network",
+    "Distribution_Network": "Distribution_Network",  # Identity mapping
+    "Material": "Material",
+
+    # Motivation Layer
+    "Stakeholder": "Stakeholder",
+    "Driver": "Driver",
+    "Assessment": "Assessment",
+    "Goal": "Goal",
+    "Outcome": "Outcome",
+    "Principle": "Principle",
+    "Requirement": "Requirement",
+    "Constraint": "Constraint",
+    "Meaning": "Meaning",
+    "Value": "Value",
+
+    # Strategy Layer
+    "Resource": "Resource",
+    "Capability": "Capability",
+    "CourseOfAction": "Course_of_Action",
+    "Course_of_Action": "Course_of_Action",  # Identity mapping
+    "ValueStream": "Value_Stream",
+    "Value_Stream": "Value_Stream",  # Identity mapping
+
+    # Implementation Layer
+    "WorkPackage": "Work_Package",
+    "Work_Package": "Work_Package",  # Identity mapping
+    "Deliverable": "Deliverable",
+    "ImplementationEvent": "Implementation_Event",
+    "Implementation_Event": "Implementation_Event",  # Identity mapping
+    "Plateau": "Plateau",
+    "Gap": "Gap"
+}
+
+
+# Valid layers mapping
+VALID_LAYERS: Dict[str, str] = {
+    "business": "Business",
+    "application": "Application",
+    "technology": "Technology",
+    "physical": "Physical",
+    "motivation": "Motivation",
+    "strategy": "Strategy",
+    "implementation": "Implementation",
+    # Allow both cases
+    "Business": "Business",
+    "Application": "Application",
+    "Technology": "Technology",
+    "Physical": "Physical",
+    "Motivation": "Motivation",
+    "Strategy": "Strategy",
+    "Implementation": "Implementation"
+}
+
+
+# Valid relationship types
+VALID_RELATIONSHIPS: List[str] = [
+    "Access", "Aggregation", "Assignment", "Association", "Composition",
+    "Flow", "Influence", "Realization", "Serving", "Specialization", "Triggering"
+]
 
 
 def normalize_element_type(element_type: str) -> str:

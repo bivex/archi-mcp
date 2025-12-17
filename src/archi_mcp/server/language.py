@@ -36,36 +36,5 @@ def detect_language_from_content(diagram: DiagramInput) -> str:
     """
     from ..utils.language_detection import LanguageDetector
 
-    # Collect text content from diagram
-    text_content = []
-
-    # Add title and description
-    if diagram.title:
-        text_content.append(diagram.title)
-    if diagram.description:
-        text_content.append(diagram.description)
-
-    # Add element names and descriptions
-    for element in diagram.elements:
-        text_content.append(element.name)
-        if element.description:
-            text_content.append(element.description)
-
-    # Add relationship descriptions and labels
-    for rel in diagram.relationships:
-        if rel.description:
-            text_content.append(rel.description)
-        if rel.label:
-            text_content.append(rel.label)
-
-    # Join all content
-    full_text = " ".join(text_content)
-
-    if not full_text.strip():
-        return "en"  # Default to English if no content
-
-    # Use language detector
-    detector = LanguageDetector()
-    detected_lang = detector.detect_language(full_text)
-
-    return detected_lang
+    # Use the LanguageDetector's method directly
+    return LanguageDetector.detect_language_from_content(diagram)

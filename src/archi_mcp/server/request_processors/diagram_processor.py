@@ -1,5 +1,7 @@
 """Diagram processing request handlers for ArchiMate MCP Server."""
 
+from __future__ import annotations
+
 import os
 import json
 import tempfile
@@ -10,8 +12,11 @@ import platform
 import threading
 import socket
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TYPE_CHECKING
 from fastmcp import FastMCP
+
+if TYPE_CHECKING:
+    from ..models import DiagramInput
 
 from ...utils.logging import get_logger
 from ...utils.exceptions import ArchiMateError, ArchiMateValidationError
@@ -37,21 +42,29 @@ from ...archimate.elements.base import ArchiMateLayer, ArchiMateAspect
 from ...i18n import ArchiMateTranslator, AVAILABLE_LANGUAGES
 from ..error_handler import _build_enhanced_error_response
 from ..export_manager import create_export_directory
+from ..models import DiagramInput
+
+# Make DiagramInput available globally for MCP decorators
+globals()['DiagramInput'] = DiagramInput
+
+__all__ = ['create_archimate_diagram', 'create_diagram_from_file']
 
 # Import the main MCP instance
 from ..main import mcp
 
 logger = get_logger(__name__)
 
-# Import the large implementation function from the original server.py
-# This will be refactored later in the reduce-method-complexity phase
-from ... import server as server_module
-_create_archimate_diagram_impl = server_module._create_archimate_diagram_impl
-_load_diagram_from_file_impl = server_module._load_diagram_from_file_impl
+# Import the implementation functions directly from the diagram engine
+from ..diagram_engine import _create_archimate_diagram_impl, _load_diagram_from_file_impl
+
+# Ensure DiagramInput is available in global namespace for MCP decorators
+import sys
+current_module = sys.modules[__name__]
+current_module.DiagramInput = DiagramInput
 
 
 @mcp.tool()
-def create_archimate_diagram(diagram: 'DiagramInput') -> str:
+def create_archimate_diagram(diagram) -> str:
     """Generate production-ready ArchiMate diagrams with comprehensive capability discovery.
 
     This is the main MCP tool for creating ArchiMate diagrams. For full documentation

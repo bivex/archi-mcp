@@ -68,10 +68,23 @@ def _process_elements(generator: ArchiMateGenerator, diagram: DiagramInput, lang
     """Process and add elements to the generator."""
     debug_log.append(f"Processing {len(diagram.elements)} elements")
 
+    from ..archimate.elements.base import ArchiMateElement, ArchiMateLayer, ArchiMateAspect
+
     for element_data in diagram.elements:
         try:
             # Create element from input data
-            element = generator.create_element_from_data(element_data.model_dump())
+            # Convert layer and aspect strings to enums
+            layer = ArchiMateLayer(element_data.layer) if hasattr(ArchiMateLayer, element_data.layer) else ArchiMateLayer.BUSINESS
+            aspect = ArchiMateAspect(element_data.aspect) if element_data.aspect and hasattr(ArchiMateAspect, element_data.aspect) else ArchiMateAspect.ACTIVE_STRUCTURE
+
+            element = ArchiMateElement(
+                id=element_data.id,
+                name=element_data.name,
+                element_type=element_data.element_type,
+                layer=layer,
+                aspect=aspect,
+                description=element_data.description
+            )
             generator.add_element(element)
             debug_log.append(f"Added element: {element.id} ({element.element_type})")
         except Exception as e:
@@ -83,10 +96,19 @@ def _process_relationships(generator: ArchiMateGenerator, diagram: DiagramInput,
     """Process and add relationships to the generator."""
     debug_log.append(f"Processing {len(diagram.relationships)} relationships")
 
+    from ..archimate.relationships import ArchiMateRelationship, ArchiMateRelationshipType
+
     for rel_data in diagram.relationships:
         try:
             # Create relationship from input data
-            relationship = generator.create_relationship_from_data(rel_data.model_dump())
+            relationship = ArchiMateRelationship(
+                id=rel_data.id,
+                from_element=rel_data.from_element,
+                to_element=rel_data.to_element,
+                relationship_type=ArchiMateRelationshipType(rel_data.relationship_type),
+                description=rel_data.description,
+                label=rel_data.label
+            )
             generator.add_relationship(relationship)
             debug_log.append(f"Added relationship: {relationship.id} ({relationship.relationship_type})")
         except Exception as e:
