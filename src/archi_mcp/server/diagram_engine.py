@@ -310,7 +310,53 @@ def _save_failed_attempt(plantuml_code: str, diagram_input: DiagramInput, debug_
 
 
 def create_archimate_diagram_impl(diagram: DiagramInput) -> str:
-    """Implementation of ArchiMate diagram creation."""
+    """Generate production-ready ArchiMate diagrams with comprehensive styling and layout options.
+
+    This is the main MCP tool for creating ArchiMate diagrams. It provides extensive capabilities
+    for defining and visualizing architectural models using the ArchiMate framework with PlantUML.
+
+    Features include:
+    - Comprehensive styling with 6 visual themes (Modern, Classic, Colorful, Minimal, Dark, Professional)
+    - Hierarchical grouping of elements by layers and aspects
+    - Rich component diagram features (ports, interfaces, notes)
+    - Advanced relationship styling with custom arrow types and directions
+    - Multi-language support for element and relationship labels (English, Russian, Slovak, Ukrainian)
+    - Export capabilities to PNG, SVG, and raw PlantUML code
+
+    AVAILABLE ELEMENTS BY LAYER:
+    • Business Layer: Actor, Role, Collaboration, Interface, Process, Function, Interaction, Event, Service, Object, Contract, Representation
+    • Application Layer: Component, Interface, Function, Interaction, Service, Data Object
+    • Technology Layer: Node, Device, System Software, Technology Interface, Technology Function, Technology Service, Artifact
+    • Physical Layer: Equipment, Facility, Distribution Network, Material
+    • Motivation Layer: Stakeholder, Driver, Assessment, Goal, Outcome, Principle, Requirement, Constraint
+    • Strategy Layer: Capability, Resource, Course of Action
+    • Implementation Layer: Work Package, Deliverable, Implementation Event, Plateau
+
+    VISUAL THEMES:
+    • MODERN: Clean, contemporary design with blue accents.
+    • CLASSIC: Traditional styling with gray tones.
+    • COLORFUL: Bright, vibrant color scheme.
+    • MINIMAL: Clean, minimal design with subtle styling.
+    • DARK: Dark theme suitable for presentations.
+    • PROFESSIONAL: Corporate styling with professional colors.
+
+    ADVANCED FEATURES:
+    • Ports & Interfaces: Define connection points and expose interfaces for components.
+    • Notes: Attach descriptive notes to elements, customize position and colors.
+    • Grouping Styles: Utilize various PlantUML grouping constructs: `package`, `node`, `folder`, `frame`, `cloud`, `database`, `rectangle`.
+    • Relationship Styles: Control arrow appearance with `solid`, `dashed`, `dotted` lines and specific arrowheads (e.g., `COMPOSITION`, `AGGREGATION`, `SERVING`).
+    • Layout Controls: Fine-tune diagram layout with direction hints (`horizontal`, `vertical`), spacing options (`compact`, `normal`, `wide`), and advanced Graphviz engine pragmas (`layout_engine`, `concentrate`, `nodesep`, `ranksep`).
+
+    Args:
+        diagram: A `DiagramInput` object containing the specification for the diagram.
+                 This includes elements, relationships, layout, and output configurations.
+
+    Returns:
+        A JSON string containing the generated PlantUML code and paths to exported images (PNG, SVG).
+
+    Raises:
+        ArchiMateError: If diagram generation or validation fails.
+    """
     debug_log = []
     start_time = time.time()
 
