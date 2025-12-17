@@ -68,7 +68,7 @@ class TestTranslationOverrides:
     
     def test_override_relationship_labels_slovak(self):
         """Test relationship label override for Slovak content."""
-        from archi_mcp.server import DiagramInput, RelationshipInput, override_relationship_labels_with_translations
+        from archi_mcp.server import DiagramInput, RelationshipInput, translate_relationship_labels
         from archi_mcp.i18n import ArchiMateTranslator
         
         # Create diagram with custom relationship labels
@@ -96,7 +96,7 @@ class TestTranslationOverrides:
         translator = ArchiMateTranslator("sk")
         
         # Override labels with translations
-        override_relationship_labels_with_translations(diagram, translator)
+        translate_relationship_labels(diagram, translator)
         
         # Labels should be overridden with Slovak translations
         # (Implementation may vary based on Slovak translation dictionary)
@@ -106,7 +106,7 @@ class TestTranslationOverrides:
     
     def test_override_relationship_labels_english(self):
         """Test relationship label override for English content (no change expected)."""
-        from archi_mcp.server import DiagramInput, RelationshipInput, override_relationship_labels_with_translations
+        from archi_mcp.server import DiagramInput, RelationshipInput, translate_relationship_labels
         from archi_mcp.i18n import ArchiMateTranslator
         
         # Create diagram with custom relationship labels
@@ -128,7 +128,7 @@ class TestTranslationOverrides:
         translator = ArchiMateTranslator("en")
         
         # Override labels with translations (should not change for English)
-        override_relationship_labels_with_translations(diagram, translator)
+        translate_relationship_labels(diagram, translator)
         
         # For English, labels should remain unchanged
         assert diagram.relationships[0].label == original_label

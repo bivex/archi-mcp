@@ -98,42 +98,42 @@ class TestCustomRelationshipValidation:
     
     def test_validate_custom_relationship_success(self):
         """Test successful custom relationship validation."""
-        from archi_mcp.server import validate_custom_relationship_name
+        from archi_mcp.server import validate_relationship_name
         
         # Test valid English synonyms
-        is_valid, error_msg = validate_custom_relationship_name("implements", "Realization")
+        is_valid, error_msg = validate_relationship_name("implements", "Realization")
         # Function signature includes language parameter
         if not is_valid:
             # Test with language parameter
-            is_valid, error_msg = validate_custom_relationship_name("implements", "Realization", "en")
+            is_valid, error_msg = validate_relationship_name("implements", "Realization", "en")
             assert is_valid or "implements" in error_msg
     
     def test_validate_custom_relationship_too_long(self):
         """Test custom relationship name too long."""
-        from archi_mcp.server import validate_custom_relationship_name
+        from archi_mcp.server import validate_relationship_name
         
         # Test name exceeding character limit
         long_name = "this is a very long relationship name that exceeds the limit"
-        is_valid, error_msg = validate_custom_relationship_name(long_name, "Access")
+        is_valid, error_msg = validate_relationship_name(long_name, "Access")
         assert not is_valid
         assert len(error_msg) > 0  # Should return some error message
     
     def test_validate_custom_relationship_too_many_words(self):
         """Test custom relationship name with too many words.""" 
-        from archi_mcp.server import validate_custom_relationship_name
+        from archi_mcp.server import validate_relationship_name
         
         # Test name with more than 4 words (limit is now 4)
-        is_valid, error_msg = validate_custom_relationship_name("one two three four five", "Access")
+        is_valid, error_msg = validate_relationship_name("one two three four five", "Access")
         # This should fail validation
         assert not is_valid
         assert "maximum 4 words" in error_msg
     
     def test_validate_custom_relationship_invalid_synonym(self):
         """Test invalid synonym for relationship type."""
-        from archi_mcp.server import validate_custom_relationship_name
+        from archi_mcp.server import validate_relationship_name
         
         # Test completely unrelated word
-        is_valid, error_msg = validate_custom_relationship_name("banana", "Realization")
+        is_valid, error_msg = validate_relationship_name("banana", "Realization")
         # Function may be permissive with synonym validation
         # Just verify it returns valid response
         assert isinstance(is_valid, bool)
@@ -141,12 +141,12 @@ class TestCustomRelationshipValidation:
     
     def test_validate_custom_relationship_case_insensitive(self):
         """Test case insensitive validation."""
-        from archi_mcp.server import validate_custom_relationship_name
+        from archi_mcp.server import validate_relationship_name
         
         # Test different cases - just verify function works
-        is_valid1, error_msg1 = validate_custom_relationship_name("IMPLEMENTS", "Realization")
-        is_valid2, error_msg2 = validate_custom_relationship_name("Supports", "Serving") 
-        is_valid3, error_msg3 = validate_custom_relationship_name("realizuje", "realization")
+        is_valid1, error_msg1 = validate_relationship_name("IMPLEMENTS", "Realization")
+        is_valid2, error_msg2 = validate_relationship_name("Supports", "Serving")
+        is_valid3, error_msg3 = validate_relationship_name("realizuje", "realization")
         
         # Just verify the function returns valid tuples
         assert isinstance(is_valid1, bool)
