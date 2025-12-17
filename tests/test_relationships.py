@@ -54,7 +54,7 @@ class TestArchiMateRelationship:
         )
         
         plantuml = relationship.to_plantuml()
-        expected = 'Rel_Serving(source, target, "serves")'
+        expected = '"source" --> "target"'
         assert plantuml == expected
     
     def test_relationship_plantuml_with_direction(self):
@@ -70,7 +70,7 @@ class TestArchiMateRelationship:
         
         plantuml = relationship.to_plantuml()
         # Direction is layout hint only, not part of PlantUML syntax
-        expected = 'Rel_Realization(source, target, "realizes")'
+        expected = '"source" --> "target" : realizes'
         assert plantuml == expected
     
     def test_relationship_validation_success(self):
@@ -116,8 +116,8 @@ class TestArchiMateRelationship:
         
         errors = relationship.validate_relationship(elements)
         assert len(errors) == 2
-        assert "Source element 'missing_1' not found" in errors
-        assert "Target element 'missing_2' not found" in errors
+        assert "Source element 'missing_1' does not exist" in errors
+        assert "Target element 'missing_2' does not exist" in errors
     
     def test_relationship_string_representation(self):
         """Test string representation of relationship."""
