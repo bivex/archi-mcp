@@ -58,8 +58,11 @@ class ArchiMateRelationship(BaseModel):
 
         return plantuml_code
 
-    def validate_relationship(self) -> List[str]:
+    def validate_relationship(self, elements: dict) -> List[str]:
         """Validate the relationship according to ArchiMate specification.
+
+        Args:
+            elements: Dictionary of element IDs to ArchiMateElement objects
 
         Returns:
             List of validation errors (empty if valid)
@@ -80,10 +83,58 @@ class ArchiMateRelationship(BaseModel):
         if self.from_element == self.to_element:
             errors.append("Relationship cannot reference the same element")
 
+        # Check if referenced elements exist
+        if self.from_element not in elements:
+            errors.append(f"Source element '{self.from_element}' does not exist")
+        if self.to_element not in elements:
+            errors.append(f"Target element '{self.to_element}' does not exist")
+
+        # If elements exist, perform additional validation
+        if self.from_element in elements and self.to_element in elements:
+            from_elem = elements[self.from_element]
+            to_elem = elements[self.to_element]
+
+            # Validate relationship constraints based on element types and layers
+            constraint_errors = self._validate_relationship_constraints(from_elem, to_elem)
+            errors.extend(constraint_errors)
+
+        return errors
+
+    def _validate_relationship_constraints(self, from_elem, to_elem) -> List[str]:
+        """Validate relationship constraints between source and target elements.
+
+        Args:
+            from_elem: Source ArchiMateElement
+            to_elem: Target ArchiMateElement
+
+        Returns:
+            List of constraint validation errors
+        """
+        errors = []
+
+        # Basic layer compatibility check
+        if hasattr(from_elem, 'layer') and hasattr(to_elem, 'layer'):
+            # Allow relationships within the same layer or between compatible layers
+            compatible_layers = {
+                'Business': ['Business', 'Application', 'Technology', 'Physical', 'Implementation', 'Motivation', 'Strategy'],
+                'Application': ['Business', 'Application', 'Technology', 'Physical', 'Implementation', 'Motivation', 'Strategy'],
+                'Technology': ['Business', 'Application', 'Technology', 'Physical', 'Implementation', 'Motivation', 'Strategy'],
+                'Physical': ['Business', 'Application', 'Technology', 'Physical', 'Implementation', 'Motivation', 'Strategy'],
+                'Implementation': ['Business', 'Application', 'Technology', 'Physical', 'Implementation', 'Motivation', 'Strategy'],
+                'Motivation': ['Business', 'Application', 'Technology', 'Physical', 'Implementation', 'Motivation', 'Strategy'],
+                'Strategy': ['Business', 'Application', 'Technology', 'Physical', 'Implementation', 'Motivation', 'Strategy']
+            }
+
+            from_layer = str(from_elem.layer.value) if hasattr(from_elem.layer, 'value') else str(from_elem.layer)
+            to_layer = str(to_elem.layer.value) if hasattr(to_elem.layer, 'value') else str(to_elem.layer)
+
+            if to_layer not in compatible_layers.get(from_layer, []):
+                errors.append(f"Invalid relationship from {from_layer} layer to {to_layer} layer")
+
         return errors
 
     def __str__(self) -> str:
-        return f"{self.relationship_type.value}({self.from_element} -> {self.to_element})"
+        return f"{self.from_element} --{self.relationship_type.value}--> {self.to_element}"
 
 
 # Relationship type mapping for backward compatibility

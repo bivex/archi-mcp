@@ -23,7 +23,7 @@ def test_server_initialization():
     # FastMCP should be initialized
     assert mcp is not None
     assert hasattr(mcp, 'name')
-    assert mcp.name == 'archi-mcp'
+    assert mcp.name == 'archi-mate'
 
 def test_create_archimate_diagram():
     """Test create_archimate_diagram tool."""

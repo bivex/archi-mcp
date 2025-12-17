@@ -46,13 +46,13 @@ class ArchiMateLayer(str, Enum):
     def get_layer_color(self) -> str:
         """Get the default PlantUML color for this layer."""
         colors = {
-            cls.BUSINESS: "Business",
-            cls.APPLICATION: "Application",
-            cls.TECHNOLOGY: "Technology",
-            cls.PHYSICAL: "Physical",
-            cls.MOTIVATION: "Motivation",
-            cls.STRATEGY: "Strategy",
-            cls.IMPLEMENTATION: "Implementation",
+            ArchiMateLayer.BUSINESS: "Business",
+            ArchiMateLayer.APPLICATION: "Application",
+            ArchiMateLayer.TECHNOLOGY: "Technology",
+            ArchiMateLayer.PHYSICAL: "Physical",
+            ArchiMateLayer.MOTIVATION: "Motivation",
+            ArchiMateLayer.STRATEGY: "Strategy",
+            ArchiMateLayer.IMPLEMENTATION: "Implementation",
         }
         return colors.get(self, "Technology")
 

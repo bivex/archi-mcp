@@ -1,8 +1,8 @@
 """HTTP server functionality for serving static files."""
 
 import os
-import threading
 import socket
+import threading
 from typing import Optional
 
 # Global variables for HTTP server state
