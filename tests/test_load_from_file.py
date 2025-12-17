@@ -33,7 +33,7 @@ def test_load_from_corrected_example():
 
     # Should succeed - check for success status in JSON
     assert "❌" not in result  # No error emoji
-    assert "status" in result and "success" in result
+    assert '"success": true' in result
     assert "exports" in result.lower()
 
 
@@ -66,7 +66,7 @@ def test_load_absolute_path():
 
     # Should succeed - check for success status in JSON
     assert "❌" not in result  # No error emoji
-    assert "status" in result and "success" in result
+    assert '"success": true' in result
     assert "exports" in result.lower()
 
 

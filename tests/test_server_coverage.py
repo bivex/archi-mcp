@@ -21,18 +21,24 @@ class TestLanguageDetection:
             description="Proaktívna starostlivosť o zákazníkov",
             elements=[
                 ElementInput(
-                    id="customer", 
+                    id="customer",
                     name="Zákazník",
                     element_type="Business_Actor",
                     layer="Business",
                     description="Podnikový zákaznícky objekt"
+                ),
+                ElementInput(
+                    id="service",
+                    name="Služba",
+                    element_type="Business_Service",
+                    layer="Business"
                 )
             ],
             relationships=[
                 RelationshipInput(
                     id="rel1",
                     from_element="customer",
-                    to_element="service", 
+                    to_element="service",
                     relationship_type="Access",
                     label="pristupuje"
                 )
@@ -122,11 +128,11 @@ class TestCustomRelationshipValidation:
         """Test custom relationship name with too many words.""" 
         from archi_mcp.server import validate_relationship_name
         
-        # Test name with more than 4 words (limit is now 4)
-        is_valid, error_msg = validate_relationship_name("one two three four five", "Access")
+        # Test name with more than 5 words
+        is_valid, error_msg = validate_relationship_name("one two three four five six", "Access")
         # This should fail validation
         assert not is_valid
-        assert "maximum 4 words" in error_msg
+        assert "max 5 words" in error_msg
     
     def test_validate_custom_relationship_invalid_synonym(self):
         """Test invalid synonym for relationship type."""
@@ -175,8 +181,7 @@ class TestDiagramValidation:
                 layer="InvalidLayer"
             )
         
-        assert "Input should be" in str(exc_info.value)
-        assert "InvalidLayer" in str(exc_info.value)
+        assert "Invalid layer 'InvalidLayer'" in str(exc_info.value)
     
     def test_validate_element_input_invalid_element_type(self):
         """Test element validation with invalid element type."""
@@ -208,8 +213,7 @@ class TestDiagramValidation:
                 relationship_type="Invalid_Relationship"
             )
         
-        assert "Input should be" in str(exc_info.value)
-        assert "Invalid_Relationship" in str(exc_info.value)
+        assert "Invalid relationship type 'Invalid_Relationship'" in str(exc_info.value)
     
     def test_validate_diagram_basic(self):
         """Test basic diagram validation functions exist."""

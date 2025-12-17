@@ -133,8 +133,7 @@ class TestElementCreation:
                 description="Test element"
             )
         
-        assert "Input should be" in str(exc_info.value)
-        assert "InvalidLayer" in str(exc_info.value)
+        assert "Invalid layer 'InvalidLayer'" in str(exc_info.value)
 
 class TestRelationshipCreation:
     """Test ArchiMate relationship creation and validation."""
