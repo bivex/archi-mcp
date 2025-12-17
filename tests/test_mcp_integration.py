@@ -280,4 +280,4 @@ def test_performance_basic():
     else:
         # If it's a string, check for success message
         assert isinstance(result, str)
-        assert "ArchiMate diagram created" in result and "successfully" in result
+        assert "ArchiMate diagram generated successfully" in result

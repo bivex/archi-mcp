@@ -117,7 +117,10 @@ class TestTranslationOverrides:
         # Create diagram with custom relationship labels
         original_label = "custom implements"
         diagram = DiagramInput(
-            elements=[],
+            elements=[
+                {"id": "elem1", "name": "Element 1", "layer": "Business", "element_type": "Actor"},
+                {"id": "elem2", "name": "Element 2", "layer": "Business", "element_type": "Service"}
+            ],
             relationships=[
                 RelationshipInput(
                     id="rel1",

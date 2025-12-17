@@ -6,7 +6,7 @@ from fastmcp import FastMCP
 from ..utils.logging import setup_logging, get_logger
 
 # Initialize MCP server
-mcp = FastMCP("archi-mate")
+mcp = FastMCP("archi-mcp")
 
 # Setup logging
 setup_logging()

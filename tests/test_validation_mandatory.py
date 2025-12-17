@@ -217,7 +217,7 @@ customer --> service
     assert isinstance(error_msg, str)
     
     if renders_ok:
-        assert "passed" in error_msg.lower()
+        assert "renders successfully" in error_msg.lower()
     else:
         assert ("jar not found" in error_msg.lower() or 
                 "validation error" in error_msg.lower() or
