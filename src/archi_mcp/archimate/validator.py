@@ -2,7 +2,8 @@
 
 from typing import Dict, List, Optional, Set, Tuple
 from .elements.base import ArchiMateElement, ArchiMateLayer
-from .relationships import ArchiMateRelationship, ArchiMateRelationshipType
+from .relationships import ArchiMateRelationship
+from .relationships.types import ArchiMateRelationshipType
 from ..utils.exceptions import ArchiMateValidationError
 
 

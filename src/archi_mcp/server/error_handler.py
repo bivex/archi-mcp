@@ -214,7 +214,7 @@ def _add_command_testing_suggestion(error_parts: list, plantuml_command: str) ->
     error_parts.append(f"- **Test PlantUML directly:** `{plantuml_command.replace('/tmp/tmp', 'path/to/diagram')}`")
 
 
-def _build_enhanced_error_response(original_error: Exception, debug_log: list, error_export_dir, plantuml_code: str = None) -> str:
+def build_enhanced_error_response(original_error: Exception, debug_log: list, error_export_dir, plantuml_code: str = None) -> str:
     """Build comprehensive error response with debugging information for MCP tool.
 
     Args:

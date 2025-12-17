@@ -5,7 +5,8 @@ from pathlib import Path
 import tempfile
 from archi_mcp.archimate.generator import ArchiMateGenerator, DiagramLayout
 from archi_mcp.archimate.elements.base import ArchiMateElement, ArchiMateLayer, ArchiMateAspect
-from archi_mcp.archimate.relationships import ArchiMateRelationship, RelationshipType
+from archi_mcp.archimate.relationships import ArchiMateRelationship
+from archi_mcp.archimate.relationships.types import ArchiMateRelationshipType
 from archi_mcp.utils.exceptions import ArchiMateGenerationError
 
 
@@ -28,7 +29,7 @@ class TestArchiMateGenerator:
             id=f"test_rel_{rel_id}",
             from_element=from_id,
             to_element=to_id,
-            relationship_type=RelationshipType.SERVING
+            relationship_type=ArchiMateRelationshipType.SERVING
         )
     
     def test_generator_initialization(self):

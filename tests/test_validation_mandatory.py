@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 
 def test_validate_plantuml_renders_function():
     """Test the central validation function."""
-    from archi_mcp.server import _validate_plantuml_renders
+    from archi_mcp.server import validate_plantuml_renders
     
     # Test with minimal ArchiMate PlantUML code
     test_plantuml = """
@@ -19,10 +19,10 @@ Business_Actor(test, "Test Actor")
 """
     
     # Function should exist and be callable
-    assert callable(_validate_plantuml_renders)
+    assert callable(validate_plantuml_renders)
     
     # Test the function (will fail if PlantUML jar not found, but that's expected)
-    renders_ok, error_msg = _validate_plantuml_renders(test_plantuml)
+    renders_ok, error_msg = validate_plantuml_renders(test_plantuml)
     
     # Should return a tuple
     assert isinstance(renders_ok, bool)
@@ -34,7 +34,7 @@ Business_Actor(test, "Test Actor")
                 "Validation error" in error_msg or 
                 "ArchiMate validation failed" in error_msg)
 
-@patch('archi_mcp.server._validate_plantuml_renders')
+@patch('archi_mcp.server.validate_plantuml_renders')
 def test_create_diagram_with_validation(mock_validate):
     """Test create_archimate_diagram with validation."""
     import archi_mcp.server as server_module
@@ -75,7 +75,7 @@ def test_create_diagram_with_validation(mock_validate):
     # Validation function should have been called
     mock_validate.assert_called_once()
 
-@patch('archi_mcp.server._validate_plantuml_renders')
+@patch('archi_mcp.server.validate_plantuml_renders')
 def test_create_diagram_validation_failure(mock_validate):
     """Test create_archimate_diagram with validation failure."""
     import archi_mcp.server as server_module
@@ -122,7 +122,7 @@ def test_create_diagram_validation_failure(mock_validate):
 
 def test_validation_function_with_invalid_plantuml():
     """Test validation function with invalid PlantUML code."""
-    from archi_mcp.server import _validate_plantuml_renders
+    from archi_mcp.server import validate_plantuml_renders
     
     # Test with invalid PlantUML syntax
     invalid_plantuml = """
@@ -131,7 +131,7 @@ this is not valid plantuml syntax at all
 @enduml
 """
     
-    renders_ok, error_msg = _validate_plantuml_renders(invalid_plantuml)
+    renders_ok, error_msg = validate_plantuml_renders(invalid_plantuml)
     
     # Should handle invalid syntax gracefully
     assert isinstance(renders_ok, bool)
@@ -140,9 +140,9 @@ this is not valid plantuml syntax at all
 
 def test_validation_function_with_empty_plantuml():
     """Test validation function with empty PlantUML code."""
-    from archi_mcp.server import _validate_plantuml_renders
+    from archi_mcp.server import validate_plantuml_renders
     
-    renders_ok, error_msg = _validate_plantuml_renders("")
+    renders_ok, error_msg = validate_plantuml_renders("")
     
     # Should handle empty input gracefully
     assert isinstance(renders_ok, bool)
@@ -150,7 +150,7 @@ def test_validation_function_with_empty_plantuml():
 
 def test_validation_function_timeout_handling():
     """Test validation function timeout handling."""
-    from archi_mcp.server import _validate_plantuml_renders
+    from archi_mcp.server import validate_plantuml_renders
     
     # This is a basic test - actual timeout testing would require mocking subprocess
     test_plantuml = """
@@ -160,7 +160,7 @@ rectangle "Test" as test
 """
     
     # Should not crash even with timeout scenarios
-    renders_ok, error_msg = _validate_plantuml_renders(test_plantuml)
+    renders_ok, error_msg = validate_plantuml_renders(test_plantuml)
     
     assert isinstance(renders_ok, bool)
     assert isinstance(error_msg, str)
@@ -174,7 +174,7 @@ def test_all_tools_have_validation():
     server_source = inspect.getsource(server_module)
     
     # Verify validation function exists
-    assert "_validate_plantuml_renders" in server_source, "Validation function not found in server"
+    assert "validate_plantuml_renders" in server_source, "Validation function not found in server"
     
     # Verify core functions have validation logic
     assert "create_archimate_diagram" in server_source, "create_archimate_diagram not found"
@@ -198,7 +198,7 @@ def test_all_tools_have_validation():
 @pytest.mark.integration
 def test_validation_with_real_plantuml():
     """Integration test with real PlantUML if available."""
-    from archi_mcp.server import _validate_plantuml_renders
+    from archi_mcp.server import validate_plantuml_renders
     
     # Simple valid PlantUML
     valid_plantuml = """
@@ -209,7 +209,7 @@ customer --> service
 @enduml
 """
     
-    renders_ok, error_msg = _validate_plantuml_renders(valid_plantuml)
+    renders_ok, error_msg = validate_plantuml_renders(valid_plantuml)
     
     # If PlantUML is available, should work
     # If not available, should fail gracefully with appropriate error

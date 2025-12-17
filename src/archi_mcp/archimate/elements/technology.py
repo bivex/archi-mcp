@@ -1,10 +1,9 @@
 """Technology layer ArchiMate elements."""
 
-from .abstract.core import CoreLayerElement
-from .base import ArchiMateLayer
+from .base import ArchiMateElement, ArchiMateLayer
 
 
-class TechnologyElement(CoreLayerElement):
+class TechnologyElement(ArchiMateElement):
     """Base class for Technology layer elements."""
 
     layer: ArchiMateLayer = ArchiMateLayer.TECHNOLOGY

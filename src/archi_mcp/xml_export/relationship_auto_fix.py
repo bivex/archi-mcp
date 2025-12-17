@@ -185,33 +185,45 @@ class RelationshipAutoFixer:
                 
         return suggestions
 
+    def apply_auto_fix(self, xml_content: str) -> Tuple[str, Dict[str, any]]:
+        """
+        Apply auto-fix to XML content and return results.
+
+        Args:
+            xml_content: Original XML content
+
+        Returns:
+            Tuple of (fixed_content, fix_info_dict)
+        """
+        if self.enable_auto_fix:
+            fixed_content, fixes_applied = self.fix_xml_relationships(xml_content)
+            suggestions = []
+        else:
+            fixed_content = xml_content
+            fixes_applied = []
+            suggestions = self.get_suggested_fixes(xml_content)
+
+        fix_info = {
+            "fixes_applied": fixes_applied,
+            "suggestions": suggestions,
+            "fix_count": len(fixes_applied),
+            "suggestion_count": len(suggestions),
+            "summary": self.get_fix_summary() if fixes_applied else f"💡 Found {len(suggestions)} fixable relationships"
+        }
+
+        return fixed_content, fix_info
+
+
 def apply_auto_fix(xml_content: str, enable_fix: bool = True) -> Tuple[str, Dict[str, any]]:
     """
     Apply auto-fix to XML content and return results.
-    
+
     Args:
         xml_content: Original XML content
         enable_fix: Whether to actually apply fixes
-        
+
     Returns:
         Tuple of (fixed_content, fix_info_dict)
     """
     fixer = RelationshipAutoFixer(enable_auto_fix=enable_fix)
-    
-    if enable_fix:
-        fixed_content, fixes_applied = fixer.fix_xml_relationships(xml_content)
-        suggestions = []
-    else:
-        fixed_content = xml_content
-        fixes_applied = []
-        suggestions = fixer.get_suggested_fixes(xml_content)
-    
-    fix_info = {
-        "fixes_applied": fixes_applied,
-        "suggestions": suggestions,
-        "fix_count": len(fixes_applied),
-        "suggestion_count": len(suggestions),
-        "summary": fixer.get_fix_summary() if fixes_applied else f"💡 Found {len(suggestions)} fixable relationships"
-    }
-    
-    return fixed_content, fix_info
+    return fixer.apply_auto_fix(xml_content)

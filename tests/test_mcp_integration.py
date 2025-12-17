@@ -140,18 +140,18 @@ def test_archimate_layer_validation():
 
 def test_relationship_type_validation():
     """Test ArchiMate relationship type validation."""
-    from archi_mcp.archimate.relationships import RelationshipType
+    from archi_mcp.archimate.relationships.types import ArchiMateRelationshipType
     
     # Test valid relationship types
     valid_types = ["Access", "Aggregation", "Assignment", "Association", "Composition", "Flow", "Influence", "Realization", "Serving", "Specialization", "Triggering"]
     
     for rel_type in valid_types:
-        relationship_type = RelationshipType(rel_type)
+        relationship_type = ArchiMateRelationshipType(rel_type)
         assert relationship_type.value == rel_type
     
     # Test invalid relationship type
     with pytest.raises(ValueError):
-        RelationshipType("InvalidRelationship")
+        ArchiMateRelationshipType("InvalidRelationship")
 
 class TestMCPProtocolCompliance:
     """Test MCP protocol compliance."""

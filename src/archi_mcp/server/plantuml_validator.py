@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Tuple
 
 
-def _setup_java_environment():
+def setup_java_environment():
     """Setup Java environment variables for PlantUML execution."""
     # Ensure JAVA_HOME is set if we can find it
     if not os.getenv("JAVA_HOME"):
@@ -27,14 +27,14 @@ def _setup_java_environment():
             os.environ["PATH"] = java_bin_dir + os.pathsep + current_path
 
 
-def _validate_plantuml_renders(plantuml_code: str) -> Tuple[bool, str]:
+def validate_plantuml_renders(plantuml_code: str) -> Tuple[bool, str]:
     """Validate that PlantUML code can be rendered successfully."""
     try:
         # Setup Java environment
-        _setup_java_environment()
+        setup_java_environment()
 
         # Find PlantUML jar
-        plantuml_jar = _find_plantuml_jar()
+        plantuml_jar = find_plantuml_jar()
         if not plantuml_jar:
             return False, "PlantUML JAR file not found. Please install PlantUML."
 
@@ -50,20 +50,30 @@ def _validate_plantuml_renders(plantuml_code: str) -> Tuple[bool, str]:
             # Run PlantUML - try to find Java in common locations
             java_cmd = _find_java_executable()
             cmd = [java_cmd, '-jar', plantuml_jar, '-tpng', temp_file_path]
-            result = subprocess.run(
+            process = subprocess.Popen(
                 cmd,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-                timeout=30,  # 30 second timeout
                 env=os.environ.copy()  # Use current environment
             )
+
+            # Wait for process completion with timeout
+            try:
+                process.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                raise subprocess.TimeoutExpired(cmd, timeout=30)
+
+            # Get process output
+            stdout, stderr = process.communicate()
 
             # Check if output file was created
             if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
                 os.remove(output_file)  # Clean up
                 return True, "PlantUML code renders successfully"
             else:
-                error_msg = result.stderr.strip() if result.stderr else "Unknown PlantUML error"
+                error_msg = stderr.strip() if stderr else "Unknown PlantUML error"
                 return False, f"PlantUML rendering failed: {error_msg}"
 
         finally:
@@ -84,7 +94,7 @@ def _validate_plantuml_renders(plantuml_code: str) -> Tuple[bool, str]:
         return False, f"PlantUML validation error: {str(e)}"
 
 
-def _validate_png_file(png_file_path: Path) -> Tuple[bool, str]:
+def validate_png_file(png_file_path: Path) -> Tuple[bool, str]:
     """Validate that PNG file exists and has reasonable size."""
     try:
         if not png_file_path.exists():
@@ -182,7 +192,7 @@ def _find_java_executable() -> str:
     return "java"  # Fallback to PATH
 
 
-def _find_plantuml_jar(debug_log: list = None) -> str:
+def find_plantuml_jar(debug_log: list = None) -> str:
     """Find PlantUML JAR file in common locations."""
     import tempfile
 

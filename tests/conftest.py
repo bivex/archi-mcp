@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Dict, List
 
 from archi_mcp.archimate.elements.base import ArchiMateElement, ArchiMateLayer, ArchiMateAspect
-from archi_mcp.archimate.relationships import ArchiMateRelationship, RelationshipType
+from archi_mcp.archimate.relationships import ArchiMateRelationship
+from archi_mcp.archimate.relationships.types import ArchiMateRelationshipType
 from archi_mcp.archimate.generator import ArchiMateGenerator
 from archi_mcp.archimate.validator import ArchiMateValidator
 from archi_mcp.server.main import mcp
@@ -77,7 +78,7 @@ def sample_relationship():
         id="sample_realization",
         from_element="sample_app_component",
         to_element="sample_business_service",
-        relationship_type=RelationshipType.REALIZATION,
+        relationship_type=ArchiMateRelationshipType.REALIZATION,
         description="Application component realizes business service"
     )
 
@@ -179,7 +180,7 @@ def layered_architecture_relationships():
             id="customer_uses_service",
             from_element="customer",
             to_element="order_service",
-            relationship_type=RelationshipType.SERVING
+            relationship_type=ArchiMateRelationshipType.SERVING
         ),
         ArchiMateRelationship(
             id="app_realizes_service",
@@ -191,19 +192,19 @@ def layered_architecture_relationships():
             id="app_accesses_data",
             from_element="order_app",
             to_element="order_data",
-            relationship_type=RelationshipType.ACCESS
+            relationship_type=ArchiMateRelationshipType.ACCESS
         ),
         ArchiMateRelationship(
             id="app_deployed_on_server",
             from_element="app_server",
             to_element="order_app",
-            relationship_type=RelationshipType.ASSIGNMENT
+            relationship_type=ArchiMateRelationshipType.ASSIGNMENT
         ),
         ArchiMateRelationship(
             id="data_deployed_on_db",
             from_element="db_server",
             to_element="order_data",
-            relationship_type=RelationshipType.ASSIGNMENT
+            relationship_type=ArchiMateRelationshipType.ASSIGNMENT
         )
     ]
 

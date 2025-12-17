@@ -40,7 +40,7 @@ from ...archimate import (
 from ...archimate.generator import DiagramLayout
 from ...archimate.elements.base import ArchiMateLayer, ArchiMateAspect
 from ...i18n import ArchiMateTranslator, AVAILABLE_LANGUAGES
-from ..error_handler import _build_enhanced_error_response
+from ..error_handler import build_enhanced_error_response
 from ..export_manager import create_export_directory
 from ..models import DiagramInput
 

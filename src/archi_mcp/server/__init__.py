@@ -30,7 +30,7 @@ from .validators import (
     validate_relationship_name,
     validate_relationship_input,
 )
-from .plantuml_validator import _validate_plantuml_renders
+from .plantuml_validator import validate_plantuml_renders
 from .config import get_env_setting, is_config_locked, get_layout_setting
 
 # Import generator and validator
@@ -65,7 +65,7 @@ __all__ = [
     "normalize_relationship_type",
     "validate_relationship_name",
     "validate_relationship_input",
-    "_validate_plantuml_renders",
+    "validate_plantuml_renders",
     "get_env_setting",
     "is_config_locked",
     "get_layout_setting",

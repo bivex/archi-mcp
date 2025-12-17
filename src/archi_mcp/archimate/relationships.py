@@ -5,21 +5,10 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 from ..utils.exceptions import ArchiMateRelationshipError
+from .relationships.types import ArchiMateRelationshipType
 
 
-class RelationshipType(str, Enum):
-    """ArchiMate relationship types according to ArchiMate 3.2 specification."""
-    ACCESS = "Access"
-    AGGREGATION = "Aggregation"
-    ASSIGNMENT = "Assignment"
-    ASSOCIATION = "Association"
-    COMPOSITION = "Composition"
-    FLOW = "Flow"
-    INFLUENCE = "Influence"
-    REALIZATION = "Realization"
-    SERVING = "Serving"
-    SPECIALIZATION = "Specialization"
-    TRIGGERING = "Triggering"
+# RelationshipType enum moved to relationships.types to avoid duplication
 
 
 class RelationshipDirection(str, Enum):
@@ -124,14 +113,14 @@ class ArchiMateRelationship(BaseModel):
         
         # Access relationships typically connect active structure to passive structure
         # But this is not a strict rule - it's just a guideline
-        if self.relationship_type == RelationshipType.ACCESS:
+        if self.relationship_type == ArchiMateRelationshipType.ACCESS:
             if (from_elem.aspect.value != "Active Structure" or 
                 to_elem.aspect.value != "Passive Structure"):
                 # Only warn, don't error - Access can be used more flexibly
                 pass  # Relaxed validation for Access relationships
         
         # Composition guidelines - ArchiMate allows cross-layer composition in many cases
-        if self.relationship_type == RelationshipType.COMPOSITION:
+        if self.relationship_type == ArchiMateRelationshipType.COMPOSITION:
             # Cross-layer composition is allowed in ArchiMate 3.2:
             # - Application components can be composed of technology elements
             # - Business services can be composed of application services  
@@ -156,17 +145,17 @@ class ArchiMateRelationship(BaseModel):
 
 # Registry of all ArchiMate relationships
 ARCHIMATE_RELATIONSHIPS = {
-    "Access": RelationshipType.ACCESS,
-    "Aggregation": RelationshipType.AGGREGATION,
-    "Assignment": RelationshipType.ASSIGNMENT,
-    "Association": RelationshipType.ASSOCIATION,
-    "Composition": RelationshipType.COMPOSITION,
-    "Flow": RelationshipType.FLOW,
-    "Influence": RelationshipType.INFLUENCE,
-    "Realization": RelationshipType.REALIZATION,
-    "Serving": RelationshipType.SERVING,
-    "Specialization": RelationshipType.SPECIALIZATION,
-    "Triggering": RelationshipType.TRIGGERING,
+    "Access": ArchiMateRelationshipType.ACCESS,
+    "Aggregation": ArchiMateRelationshipType.AGGREGATION,
+    "Assignment": ArchiMateRelationshipType.ASSIGNMENT,
+    "Association": ArchiMateRelationshipType.ASSOCIATION,
+    "Composition": ArchiMateRelationshipType.COMPOSITION,
+    "Flow": ArchiMateRelationshipType.FLOW,
+    "Influence": ArchiMateRelationshipType.INFLUENCE,
+    "Realization": ArchiMateRelationshipType.REALIZATION,
+    "Serving": ArchiMateRelationshipType.SERVING,
+    "Specialization": ArchiMateRelationshipType.SPECIALIZATION,
+    "Triggering": ArchiMateRelationshipType.TRIGGERING,
 }
 
 

@@ -1,10 +1,9 @@
 """Implementation layer ArchiMate elements."""
 
-from .abstract.implementation import ImplementationLayerElement
-from .base import ArchiMateLayer
+from .base import ArchiMateElement, ArchiMateLayer
 
 
-class ImplementationElement(ImplementationLayerElement):
+class ImplementationElement(ArchiMateElement):
     """Base class for Implementation layer elements."""
 
     layer: ArchiMateLayer = ArchiMateLayer.IMPLEMENTATION

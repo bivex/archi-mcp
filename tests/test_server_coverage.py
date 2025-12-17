@@ -239,37 +239,37 @@ class TestPlantUMLValidation:
     @patch('subprocess.run')
     def test_validate_plantuml_renders_timeout(self, mock_run):
         """Test PlantUML validation timeout."""
-        from archi_mcp.server import _validate_plantuml_renders
+        from archi_mcp.server import validate_plantuml_renders
         import subprocess
         
         # Mock timeout exception
         mock_run.side_effect = subprocess.TimeoutExpired('plantuml', 30)
         
-        renders_ok, error_msg = _validate_plantuml_renders("@startuml\ntest\n@enduml")
+        renders_ok, error_msg = validate_plantuml_renders("@startuml\ntest\n@enduml")
         assert not renders_ok
         assert len(error_msg) > 0
     
     @patch('subprocess.run')
     def test_validate_plantuml_renders_file_not_found(self, mock_run):
         """Test PlantUML validation when jar not found."""
-        from archi_mcp.server import _validate_plantuml_renders
+        from archi_mcp.server import validate_plantuml_renders
         
         # Mock FileNotFoundError 
         mock_run.side_effect = FileNotFoundError("plantuml.jar not found")
         
-        renders_ok, error_msg = _validate_plantuml_renders("@startuml\ntest\n@enduml")
+        renders_ok, error_msg = validate_plantuml_renders("@startuml\ntest\n@enduml")
         assert not renders_ok
         assert len(error_msg) > 0
     
     @patch('subprocess.run')
     def test_validate_plantuml_renders_system_error(self, mock_run):
         """Test PlantUML validation system error."""
-        from archi_mcp.server import _validate_plantuml_renders
+        from archi_mcp.server import validate_plantuml_renders
         
         # Mock generic exception
         mock_run.side_effect = Exception("System error")
         
-        renders_ok, error_msg = _validate_plantuml_renders("@startuml\ntest\n@enduml")
+        renders_ok, error_msg = validate_plantuml_renders("@startuml\ntest\n@enduml")
         assert not renders_ok
         assert len(error_msg) > 0
 

@@ -3,7 +3,8 @@
 import pytest
 from archi_mcp.archimate.validator import ArchiMateValidator
 from archi_mcp.archimate.elements.base import ArchiMateElement, ArchiMateLayer, ArchiMateAspect
-from archi_mcp.archimate.relationships import ArchiMateRelationship, RelationshipType
+from archi_mcp.archimate.relationships import ArchiMateRelationship
+from archi_mcp.archimate.relationships.types import ArchiMateRelationshipType
 
 
 class TestArchiMateValidator:
@@ -109,7 +110,7 @@ class TestArchiMateValidator:
                 id="rel1",
                 from_element="component",
                 to_element="service",
-                relationship_type=RelationshipType.REALIZATION
+                relationship_type=ArchiMateRelationshipType.REALIZATION
             )
         ]
         
@@ -135,7 +136,7 @@ class TestArchiMateValidator:
                 id="orphaned",
                 from_element="missing",
                 to_element="also_missing",
-                relationship_type=RelationshipType.SERVING
+                relationship_type=ArchiMateRelationshipType.SERVING
             )
         ]
         
@@ -170,13 +171,13 @@ class TestArchiMateValidator:
                 id="duplicate",
                 from_element="elem1",
                 to_element="elem2",
-                relationship_type=RelationshipType.SERVING
+                relationship_type=ArchiMateRelationshipType.SERVING
             ),
             ArchiMateRelationship(
                 id="duplicate",  # Same ID
                 from_element="elem2",
                 to_element="elem1",
-                relationship_type=RelationshipType.ASSOCIATION
+                relationship_type=ArchiMateRelationshipType.ASSOCIATION
             )
         ]
         
@@ -256,7 +257,7 @@ class TestArchiMateValidator:
         
         assert isinstance(valid_rels, list)
         assert len(valid_rels) > 0
-        assert RelationshipType.ASSOCIATION in valid_rels
+        assert ArchiMateRelationshipType.ASSOCIATION in valid_rels
     
     def test_strict_validation_mode(self):
         """Test strict validation mode."""
@@ -284,7 +285,7 @@ class TestArchiMateValidator:
                 id="access_rel",
                 from_element="actor",
                 to_element="object",
-                relationship_type=RelationshipType.ACCESS
+                relationship_type=ArchiMateRelationshipType.ACCESS
             )
         ]
         
@@ -352,7 +353,7 @@ class TestArchiMateValidator:
             id="assignment_test",
             from_element="active",
             to_element="behavior",
-            relationship_type=RelationshipType.ASSIGNMENT
+                relationship_type=ArchiMateRelationshipType.ASSIGNMENT
         )
         
         errors = validator._check_relationship_compatibility(

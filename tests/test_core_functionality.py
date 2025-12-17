@@ -222,18 +222,18 @@ def test_archimate_layers():
 
 def test_relationship_types():
     """Test ArchiMate relationship types."""
-    from archi_mcp.archimate.relationships import RelationshipType
+    from archi_mcp.archimate.relationships.types import ArchiMateRelationshipType
     
     # Test valid relationship types
     valid_types = ["Access", "Aggregation", "Assignment", "Association", "Composition", "Flow", "Influence", "Realization", "Serving", "Specialization", "Triggering"]
     
     for rel_type in valid_types:
-        relationship_type = RelationshipType(rel_type)
+        relationship_type = ArchiMateRelationshipType(rel_type)
         assert relationship_type.value == rel_type
     
     # Test invalid relationship type
     with pytest.raises(ValueError):
-        RelationshipType("InvalidRelationship")
+        ArchiMateRelationshipType("InvalidRelationship")
 
 def test_complex_diagram_creation():
     """Test creating complex diagram with multiple elements."""
