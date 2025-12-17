@@ -7,6 +7,18 @@ from .main import mcp
 from .models import ElementInput, RelationshipInput, DiagramInput
 from .main import mcp
 
+# Import server functions
+from .http_server import (
+    start_http_server,
+    stop_http_server,
+    http_server_port,
+    http_server_thread,
+    http_server_running
+)
+
+# Import diagram processing functions
+from .request_processors.diagram_processor import create_archimate_diagram
+
 # Import utility functions (defined inline to avoid circular imports)
 def find_free_port() -> int:
     """Find a free port for HTTP server."""

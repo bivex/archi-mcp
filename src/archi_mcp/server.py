@@ -289,57 +289,8 @@ mcp = FastMCP("archi-mcp")
 generator = ArchiMateGenerator()
 validator = ArchiMateValidator()
 
-# HTTP Server for serving SVG files
-http_server_port = None
-http_server_thread = None
-http_server_running = False
-
-def find_free_port():
-    """Find a free port for the HTTP server."""
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', 0))
-        s.listen(1)
-        port = s.getsockname()[1]
-    return port
-
-def start_http_server():
-    """Start HTTP server for serving static files from exports directory."""
-    global http_server_port, http_server_thread, http_server_running
-    
-    if http_server_running:
-        return http_server_port
-    
-    # Find free port
-    http_server_port = find_free_port()
-    
-    # Create Starlette app for static files
-    try:
-        from starlette.applications import Starlette
-        from starlette.routing import Mount
-        from starlette.staticfiles import StaticFiles
-        import uvicorn
-        
-        # Ensure exports directory exists
-        exports_dir = os.path.join(os.getcwd(), "exports")
-        os.makedirs(exports_dir, exist_ok=True)
-        
-        app = Starlette(routes=[
-            Mount("/exports", StaticFiles(directory=exports_dir), name="exports"),
-        ])
-        
-        def run_server():
-            uvicorn.run(app, host="127.0.0.1", port=http_server_port, log_level="warning")
-        
-        http_server_thread = threading.Thread(target=run_server, daemon=True)
-        http_server_thread.start()
-        http_server_running = True
-        
-        logger.info(f"HTTP server started on http://127.0.0.1:{http_server_port}")
-        return http_server_port
-        
-    except ImportError as e:
-        logger.error(f"Failed to start HTTP server: {e}. Install starlette and uvicorn.")
-        return None
+# Import HTTP server functionality
+from .server.http_server import start_http_server
 
     INFLUENCE = "Influence"  # Element influences another element
     REALIZATION = "Realization"  # Element realizes or implements another element

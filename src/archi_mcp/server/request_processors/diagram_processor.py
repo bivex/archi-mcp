@@ -45,7 +45,9 @@ logger = get_logger(__name__)
 
 # Import the large implementation function from the original server.py
 # This will be refactored later in the reduce-method-complexity phase
-from ....server import _create_archimate_diagram_impl, _load_diagram_from_file_impl
+from ... import server as server_module
+_create_archimate_diagram_impl = server_module._create_archimate_diagram_impl
+_load_diagram_from_file_impl = server_module._load_diagram_from_file_impl
 
 
 @mcp.tool()
