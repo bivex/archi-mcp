@@ -1,4 +1,7 @@
-"""Server components for ArchiMate MCP."""
+"""Server components for ArchiMate MCP.
+
+VERIFIED ✅ - PlantUML validation implemented
+"""
 
 # Import main components
 from .main import mcp
@@ -16,7 +19,19 @@ from .http_server import (
     find_free_port,
 )
 from .language import translate_relationship_labels, detect_language_from_content
-from .validators import ELEMENT_TYPE_MAPPING, VALID_LAYERS, VALID_RELATIONSHIPS
+from .validators import (
+    ELEMENT_TYPE_MAPPING,
+    VALID_LAYERS,
+    VALID_RELATIONSHIPS,
+    normalize_element_type,
+    validate_element_input,
+    normalize_layer,
+    normalize_relationship_type,
+    validate_relationship_name,
+    validate_relationship_input,
+)
+from .plantuml_validator import _validate_plantuml_renders
+from .config import get_env_setting, is_config_locked, get_layout_setting
 
 # Import generator and validator
 from ..archimate import ArchiMateGenerator, ArchiMateValidator
@@ -44,6 +59,16 @@ __all__ = [
     "ELEMENT_TYPE_MAPPING",
     "VALID_LAYERS",
     "VALID_RELATIONSHIPS",
+    "normalize_element_type",
+    "validate_element_input",
+    "normalize_layer",
+    "normalize_relationship_type",
+    "validate_relationship_name",
+    "validate_relationship_input",
+    "_validate_plantuml_renders",
+    "get_env_setting",
+    "is_config_locked",
+    "get_layout_setting",
     "generator",
     "validator",
     "create_archimate_diagram"
