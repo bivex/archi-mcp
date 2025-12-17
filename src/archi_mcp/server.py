@@ -28,7 +28,15 @@ from .utils.logging import setup_logging, get_logger
 from .utils.exceptions import (
     ArchiMateError,
     ArchiMateValidationError,
-    ArchiMateGenerationError,
+)
+from .utils.json_parser import parse_json_string
+from .utils.language_detection import LanguageDetector
+from .types import (
+    ArchiMateRelationshipType,
+    ArchiMateLayerType,
+    LayoutDirectionType,
+    LayoutSpacingType,
+    BooleanStringType,
 )
 from .archimate import (
     ArchiMateElement,
@@ -42,63 +50,6 @@ from .archimate.generator import DiagramLayout
 from .archimate.elements.base import ArchiMateLayer, ArchiMateAspect
 from .i18n import ArchiMateTranslator, AVAILABLE_LANGUAGES
 
-def detect_language_from_content(diagram) -> str:
-    """Automatically detect language from diagram content.
-    
-    Args:
-        diagram: DiagramInput with elements and relationships
-        
-    Returns:
-        Language code (e.g., "sk", "en")
-    """
-    # Slovak language indicators
-    slovak_indicators = [
-        # Common Slovak words
-        'zákazník', 'podpora', 'služba', 'proces', 'objekt', 'komponent',
-        'podnikový', 'zákaznícky', 'proaktívna', 'inteligentý', 'znalostná',
-        'konverzačná', 'vylepšený', 'starostlivosť', 'riešenie', 'problémov',
-        'schopnosť', 'platforma', 'báza', 'profil', 'analýza', 'nálady',
-        'spokojnosť', 'sledovanie', 'emócií', 'monitoruje', 'aktualizuje',
-        'pristupuje', 'spúšťa', 'umožňuje', 'napájaný', 'asistovaný',
-        # Slovak diacritics patterns
-        'ň', 'ť', 'ž', 'č', 'š', 'ľ', 'ý', 'á', 'í', 'é', 'ó', 'ú', 'ô'
-    ]
-    
-    # Collect all text content
-    all_text = []
-    
-    # Add element names and descriptions
-    for element in diagram.elements:
-        if element.name:
-            all_text.append(element.name.lower())
-        if element.description:
-            all_text.append(element.description.lower())
-    
-    # Add relationship labels and descriptions
-    for rel in diagram.relationships:
-        if rel.label:
-            all_text.append(rel.label.lower())
-        if rel.description:
-            all_text.append(rel.description.lower())
-    
-    # Add title and description
-    if diagram.title:
-        all_text.append(diagram.title.lower())
-    if diagram.description:
-        all_text.append(diagram.description.lower())
-    
-    # Join all text
-    content = ' '.join(all_text)
-    
-    # Count Slovak indicators
-    slovak_score = sum(1 for indicator in slovak_indicators if indicator in content)
-    
-    # If significant Slovak content detected, return Slovak
-    if slovak_score >= 3:  # Threshold for Slovak detection
-        return "sk"
-    
-    # Default to English
-    return "en"
 
 def translate_relationship_labels(diagram, translator: ArchiMateTranslator) -> None:
     """Override custom relationship labels with translated versions if non-English language detected.
@@ -394,47 +345,6 @@ def start_http_server():
     SPECIALIZATION = "Specialization"  # Is-a relationship, inheritance
     TRIGGERING = "Triggering"  # Element triggers another element
 
-class ArchiMateRelationshipType(str, Enum):
-    """Complete ArchiMate 3.2 relationship types with descriptions."""
-    ACCESS = "Access"  # Element can access another element
-    AGGREGATION = "Aggregation"  # Whole-part relationship, parts can exist independently
-    ASSIGNMENT = "Assignment"  # Element is assigned to another element
-    ASSOCIATION = "Association"  # General relationship between elements
-    COMPOSITION = "Composition"  # Whole-part relationship, parts cannot exist independently
-    FLOW = "Flow"  # Transfer of information, money, goods, etc.
-    INFLUENCE = "Influence"  # Element influences another element
-    REALIZATION = "Realization"  # Element realizes another element
-    SERVING = "Serving"  # Element serves another element
-    SPECIALIZATION = "Specialization"  # Is-a relationship, inheritance
-    TRIGGERING = "Triggering"  # Element triggers another element
-
-class ArchiMateLayerType(str, Enum):
-    """ArchiMate 3.2 specification layers."""
-    BUSINESS = "Business"
-    APPLICATION = "Application"
-    TECHNOLOGY = "Technology"
-    PHYSICAL = "Physical"
-    MOTIVATION = "Motivation"
-    STRATEGY = "Strategy"
-    IMPLEMENTATION = "Implementation"
-
-class LayoutDirectionType(str, Enum):
-    """Layout direction options for diagram generation."""
-    TOP_BOTTOM = "top-bottom"
-    LEFT_RIGHT = "left-right"
-    BOTTOM_TOP = "bottom-top"
-    RIGHT_LEFT = "right-left"
-
-class LayoutSpacingType(str, Enum):
-    """Layout spacing options for diagram generation."""
-    COMPACT = "compact"
-    NORMAL = "normal"
-    WIDE = "wide"
-
-class BooleanStringType(str, Enum):
-    """Boolean values as strings (required for layout parameters)."""
-    TRUE = "true"
-    FALSE = "false"
 
 # Pydantic models for input validation with comprehensive schema
 class ElementInput(BaseModel):
@@ -547,169 +457,8 @@ class RelationshipInput(BaseModel):
         description="Custom relationship label (max 3 words, 30 chars). If not provided, uses translated relationship type.")
 
 
-def _auto_fix_json(json_string: str) -> tuple[bool, str, str]:
-    """Automatically fix common JSON errors.
-
-    Args:
-        json_string: The potentially invalid JSON string
-
-    Returns:
-        Tuple of (was_fixed, fixed_json, fix_description)
-    """
-    original = json_string
-    fixes_applied = []
-    import re
-
-    # Fix 0: CRITICAL - Replace single quotes with double quotes
-    # This is the most common error when copying Python dict strings
-    # Pattern: 'text' -> "text" (but preserve apostrophes in values)
-    if "'" in json_string:
-        json_string = json_string.replace("'", '"')
-        fixes_applied.append("Replaced single quotes with double quotes")
-
-    # Fix 1: Missing colons after property names
-    # Pattern: "name" "value" -> "name": "value"
-    pattern1 = r'("[\w_]+")(\s+)(")'
-    if re.search(pattern1, json_string):
-        json_string = re.sub(pattern1, r'\1:\3', json_string)
-        fixes_applied.append("Added missing colons after property names")
-
-    # Fix 2: Missing commas between properties (newline separated)
-    # Pattern: "value"\n  "next": -> "value",\n  "next":
-    pattern2 = r'("[^"]*"|\d+|true|false|null|\}|\])(\s*\n\s+)("[\w_]+":|{|"[\w_]+")'
-    if re.search(pattern2, json_string):
-        json_string = re.sub(pattern2, r'\1,\2\3', json_string)
-        if "Added missing commas" not in fixes_applied:
-            fixes_applied.append("Added missing commas between properties")
-
-    # Fix 3: Missing commas in same line
-    # Pattern: } { -> }, {
-    pattern3 = r'(\}|\])(\s+)(\{|\[)'
-    if re.search(pattern3, json_string):
-        json_string = re.sub(pattern3, r'\1,\2\3', json_string)
-        if "Added missing commas" not in fixes_applied:
-            fixes_applied.append("Added missing commas between objects/arrays")
-
-    # Fix 4: Property names without quotes
-    # Pattern: {id: "value"} -> {"id": "value"}
-    pattern4 = r'([{\s,])(\w+)(:)'
-    if re.search(pattern4, json_string):
-        json_string = re.sub(pattern4, r'\1"\2"\3', json_string)
-        fixes_applied.append("Added quotes around property names")
-
-    # Fix 5: Remove trailing commas
-    # Pattern: "value",] or "value",} -> "value"]  or "value"}
-    pattern5 = r',(\s*[}\]])'
-    if re.search(pattern5, json_string):
-        json_string = re.sub(pattern5, r'\1', json_string)
-        fixes_applied.append("Removed trailing commas")
-
-    # Fix 6: Extra opening braces
-    # Pattern: {}\n  "id" -> {\n  "id"
-    pattern6 = r'\{\}(\s*\n\s*")'
-    if re.search(pattern6, json_string):
-        json_string = re.sub(pattern6, r'{\1', json_string)
-        fixes_applied.append("Removed extra braces")
-
-    if fixes_applied:
-        fix_desc = "; ".join(fixes_applied)
-        return True, json_string, fix_desc
-
-    return False, original, ""
 
 
-def _format_json_error(json_string: str, error: json.JSONDecodeError) -> str:
-    """Format a detailed JSON error message with context and helpful suggestions.
-
-    Args:
-        json_string: The invalid JSON string
-        error: The JSONDecodeError exception
-
-    Returns:
-        Formatted error message with context and suggestions
-    """
-    # Extract error position
-    line_num = error.lineno
-    col_num = error.colno
-    error_msg = error.msg
-
-    # Get the lines around the error
-    lines = json_string.split('\n')
-    context_lines = []
-
-    # Show 2 lines before and after the error
-    start_line = max(0, line_num - 3)
-    end_line = min(len(lines), line_num + 2)
-
-    for i in range(start_line, end_line):
-        line_content = lines[i]
-        prefix = ">>> " if i == line_num - 1 else "    "
-        context_lines.append(f"{prefix}Line {i+1}: {line_content}")
-
-        # Add error pointer for the problematic line
-        if i == line_num - 1:
-            pointer = " " * (len(prefix) + len(f"Line {i+1}: ") + col_num - 1) + "^"
-            context_lines.append(pointer)
-
-    context = "\n".join(context_lines)
-
-    # Common error patterns and fixes
-    suggestions = []
-
-    if "Expecting ':'" in error_msg:
-        suggestions.append("Missing colon ':' after property name")
-        suggestions.append("Example fix: Change '\"name\" \"value\"' to '\"name\": \"value\"'")
-
-    if "Expecting ',' delimiter" in error_msg:
-        suggestions.append("Missing comma ',' between properties or array items")
-        suggestions.append("Example fix: Change '\"key1\": \"val1\" \"key2\": \"val2\"' to '\"key1\": \"val1\", \"key2\": \"val2\"'")
-
-    if "Expecting property name" in error_msg:
-        suggestions.append("Property name must be in double quotes")
-        suggestions.append("Example fix: Change '{id: \"customer\"}' to '{\"id\": \"customer\"}'")
-
-    if "Expecting value" in error_msg:
-        suggestions.append("Missing or invalid value after property name")
-        suggestions.append("Example fix: Ensure all properties have values in quotes")
-
-    if "Unterminated string" in error_msg:
-        suggestions.append("String not properly closed with closing quote")
-        suggestions.append("Example fix: Change '\"name: \"value\"' to '\"name\": \"value\"'")
-
-    if "Extra data" in error_msg:
-        suggestions.append("Extra characters after valid JSON (check for trailing commas or braces)")
-        suggestions.append("Example fix: Remove trailing commas or extra closing braces")
-
-    # Build the complete error message
-    formatted_error = f"""Invalid JSON string for diagram parameter:
-
-ERROR: {error_msg}
-LOCATION: Line {line_num}, Column {col_num}
-
-CONTEXT:
-{context}
-"""
-
-    if suggestions:
-        formatted_error += f"\nCOMMON FIXES:\n"
-        for i, suggestion in enumerate(suggestions, 1):
-            formatted_error += f"  {i}. {suggestion}\n"
-
-    formatted_error += f"""
-VALIDATION TIPS:
-  • All property names must be in double quotes: "name"
-  • All string values must be in double quotes: "value"
-  • Use colons after property names: "name": "value"
-  • Use commas between items: {{"a": 1, "b": 2}}
-  • No trailing commas: {{"last": "item"}} NOT {{"last": "item",}}
-
-SEE ALSO:
-  • Windows validation guide: WINDOWS_FIX.md
-  • Working example: examples/flower_business_corrected.json
-  • Quick validation: powershell -File validate_json.ps1
-"""
-
-    return formatted_error
 
 
 class DiagramInput(BaseModel):
@@ -784,42 +533,9 @@ class DiagramInput(BaseModel):
 
     @model_validator(mode='before')
     @classmethod
-    def parse_json_string(cls, data: Any) -> Any:
-        """Parse JSON string to dict for Claude Code compatibility with auto-fix.
-
-        Claude Code sends parameters as JSON strings, while Claude Desktop sends objects.
-        This validator handles both cases automatically and attempts to fix common JSON errors.
-        """
-        if isinstance(data, str):
-            # Try standard JSON first
-            try:
-                return json.loads(data)
-            except json.JSONDecodeError as e:
-                # Try JSON5 parser (handles single quotes, trailing commas, etc.)
-                try:
-                    import json5
-                    result = json5.loads(data)
-                    logger.info(f"Auto-fixed JSON using json5 parser (handles single quotes, trailing commas, comments)")
-                    return result
-                except Exception as json5_error:
-                    # JSON5 also failed, try manual auto-fix
-                    was_fixed, fixed_json, fix_description = _auto_fix_json(data)
-
-                    if was_fixed:
-                        try:
-                            # Try parsing the manually fixed JSON
-                            result = json.loads(fixed_json)
-                            logger.info(f"Auto-fixed JSON errors: {fix_description}")
-                            return result
-                        except json.JSONDecodeError as e2:
-                            # Manual fix didn't work either, show detailed error
-                            error_msg = _format_json_error(data, e)
-                            raise ValueError(f"Auto-fix attempted ({fix_description}) but failed.\n\n{error_msg}")
-
-                    # No auto-fix possible, show detailed error
-                    error_msg = _format_json_error(data, e)
-                    raise ValueError(error_msg)
-        return data
+    def validate_input(cls, data: Any) -> Any:
+        """Validate and parse input data for Claude Code compatibility."""
+        return parse_json_string(data)
 
 # Element type normalization mapping - input formats to internal format
 ELEMENT_TYPE_MAPPING = {
@@ -960,6 +676,19 @@ def create_export_directory() -> Path:
     export_dir = get_exports_directory() / timestamp
     export_dir.mkdir(parents=True, exist_ok=True)
     return export_dir
+
+
+def detect_language_from_content(diagram: DiagramInput) -> str:
+    """Automatically detect language from diagram content.
+
+    Args:
+        diagram: DiagramInput with elements and relationships
+
+    Returns:
+        Language code (e.g., "sk", "en")
+    """
+    return LanguageDetector.detect_language_from_content(diagram)
+
 
 def save_debug_log(export_dir: Path, log_entries: List[Dict[str, Any]]) -> Path:
     """Save debug log to the export directory."""
@@ -1632,7 +1361,7 @@ def _setup_language_and_translator(diagram: DiagramInput, debug_log: list) -> tu
     """Set up language detection, translation, and generator with proper logging."""
     # Automatic language detection from content (always enabled)
     auto_detect = True  # Always auto-detect language
-    detected_language = detect_language_from_content(diagram) if auto_detect else "en"
+    detected_language = LanguageDetector.detect_language_from_content(diagram) if auto_detect else "en"
 
     # Use detected language or fallback to provided language parameter (default: "en")
     default_lang = "en"  # Default language is always English
@@ -1842,7 +1571,7 @@ def _generate_and_validate_plantuml(generator: ArchiMateGenerator, title: str, d
             'level': 'ERROR',
             'message': f'PlantUML validation failed: {error_msg}'
         })
-        raise ArchiMateGenerationError(f"Generated diagram failed validation - {error_msg}")
+        raise ArchiMateError(f"Generated diagram failed validation - {error_msg}")
 
     debug_log.append({
         'timestamp': datetime.now().isoformat(),
@@ -2088,8 +1817,8 @@ def _generate_images(plantuml_code: str, plantuml_jar: str, debug_log: list) -> 
     # Cleanup temporary files
     try:
         os.unlink(temp_puml_path)
-    except:
-        pass
+    except Exception as cleanup_error:
+        logger.warning(f"Failed to cleanup temporary file {temp_puml_path}: {cleanup_error}")
 
     return png_file_path, svg_file_path or None
 
@@ -2471,14 +2200,14 @@ def _create_archimate_diagram_impl(diagram: DiagramInput) -> str:
             log_debug('ERROR', f'PNG and SVG generation timed out after {PLANTUML_GENERATION_TIMEOUT} seconds')
             # Save failure context before raising error
             _save_failed_attempt(plantuml_code, diagram, debug_log, f"PNG generation timed out after {PLANTUML_GENERATION_TIMEOUT} seconds")
-            raise ArchiMateGenerationError(f"PNG generation timed out after {PLANTUML_GENERATION_TIMEOUT} seconds")
+            raise ArchiMateError(f"PNG generation timed out after {PLANTUML_GENERATION_TIMEOUT} seconds")
         except Exception as png_error:
             log_debug('ERROR', f'PNG and SVG generation failed: {str(png_error)}', {
                 'error_type': type(png_error).__name__
             })
             # Save failure context before raising error
             _save_failed_attempt(plantuml_code, diagram, debug_log, f"PNG generation failed: {str(png_error)}")
-            raise ArchiMateGenerationError(f"PNG generation failed: {str(png_error)}")
+            raise ArchiMateError(f"PNG generation failed: {str(png_error)}")
         
         # Export files to directory
         export_dir, svg_generated = _export_diagram_files(
@@ -2516,7 +2245,7 @@ def _create_archimate_diagram_impl(diagram: DiagramInput) -> str:
         enhanced_error_info = _build_enhanced_error_response(e, debug_log, error_export_dir, locals().get('plantuml_code'))
         
         # Raise enhanced error with comprehensive debugging information
-        raise ArchiMateGenerationError(enhanced_error_info)
+        raise ArchiMateError(enhanced_error_info)
 
 
 @mcp.tool()

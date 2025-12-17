@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from .elements.base import ArchiMateElement
 from .relationships import ArchiMateRelationship
-from ..utils.exceptions import ArchiMateGenerationError
+from ..utils.exceptions import ArchiMateError, ArchiMateGenerationError
 from ..i18n import ArchiMateTranslator
 
 
@@ -254,7 +254,7 @@ class ArchiMateGenerator:
             title: Optional diagram title
             
         Raises:
-            ArchiMateGenerationError: If export fails
+            ArchiMateError: If export fails
         """
         try:
             plantuml_code = self.generate_plantuml(title=title)
@@ -276,7 +276,7 @@ class ArchiMateGenerator:
             File path to generated PNG image
             
         Raises:
-            ArchiMateGenerationError: If PNG generation fails
+            ArchiMateError: If PNG generation fails
         """
         import tempfile
         import subprocess
