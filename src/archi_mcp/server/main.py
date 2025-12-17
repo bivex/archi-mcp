@@ -14,3 +14,12 @@ logger = get_logger(__name__)
 
 # Import request processors to register tools
 from . import request_processors  # noqa: F401
+
+
+def main():
+    """Main entry point for the ArchiMate MCP server."""
+    mcp.run()
+
+
+if __name__ == "__main__":
+    main()
