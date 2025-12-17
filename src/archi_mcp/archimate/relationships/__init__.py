@@ -3,7 +3,7 @@
 from .types import ArchiMateRelationshipType
 from .classifier import RelationshipClassifier
 from .validator import RelationshipValidator
-from .model import ArchiMateRelationship, RelationshipDirection, ARCHIMATE_RELATIONSHIPS, create_relationship
+from .model import ArchiMateRelationship, RelationshipDirection, ArrowStyle, ARCHIMATE_RELATIONSHIPS, create_relationship
 
 # Backward compatibility alias
 RelationshipType = ArchiMateRelationshipType
@@ -15,6 +15,7 @@ __all__ = [
     "RelationshipValidator",
     "ArchiMateRelationship",
     "RelationshipDirection",
+    "ArrowStyle",
     "ARCHIMATE_RELATIONSHIPS",
     "create_relationship"
 ]

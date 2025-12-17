@@ -63,19 +63,28 @@ class ArchiMateRelationship(BaseModel):
     to_element: str = Field(..., description="Target element ID")
     relationship_type: ArchiMateRelationshipType = Field(..., description="Type of relationship")
     direction: Optional[RelationshipDirection] = Field(None, description="Optional direction")
+    arrow_style: Optional[ArrowStyle] = Field(None, description="Custom arrow style override")
+    line_style: str = Field("solid", description="Line style: solid, dashed, dotted")
+    color: Optional[str] = Field(None, description="Custom color for this relationship")
     description: Optional[str] = Field(None, description="Relationship description")
     label: Optional[str] = Field(None, description="Relationship label")
     properties: dict = Field(default_factory=dict, description="Additional properties")
-    arrow_style: Optional[ArrowStyle] = Field(None, description="Custom arrow style")
-    line_style: str = Field("solid", description="Line style: solid, dashed, dotted")
-    color: Optional[str] = Field(None, description="Custom color for this relationship")
 
-    def to_plantuml(self, translator=None, show_labels: bool = True) -> str:
+    def get_default_arrow_style(self) -> ArrowStyle:
+        """Get default arrow style for this relationship type."""
+        return RELATIONSHIP_ARROW_STYLES.get(self.relationship_type, ArrowStyle.SOLID)
+
+    def get_arrow_style(self) -> ArrowStyle:
+        """Get arrow style, using custom override if specified."""
+        return self.arrow_style or self.get_default_arrow_style()
+
+    def to_plantuml(self, translator=None, show_labels: bool = True, use_arrow_styles: bool = False) -> str:
         """Generate PlantUML code for this relationship.
 
         Args:
             translator: Optional translator for relationship labels
             show_labels: Whether to display relationship labels and custom names
+            use_arrow_styles: Whether to use new arrow style format (for backward compatibility)
 
         Returns:
             PlantUML relationship code
@@ -122,8 +131,27 @@ class ArchiMateRelationship(BaseModel):
         if self.color:
             color_str = f" #{self.color}"
 
-        # Generate PlantUML relationship
-        plantuml_code = f'"{self.from_element}" {final_arrow} "{self.to_element}"{color_str}{label}'
+        if use_arrow_styles:
+            # New format with arrow styles
+            plantuml_code = f'"{self.from_element}" {final_arrow} "{self.to_element}"{color_str}{label}'
+        else:
+            # Legacy format for backward compatibility
+            rel_type = self.relationship_type.value
+
+            if show_labels:
+                if self.label:
+                    legacy_label = f'"{self.label}"'
+                elif self.description:
+                    legacy_label = f'"{self.description}"'
+                elif translator:
+                    translated_rel = translator.translate_relationship(self.relationship_type.value)
+                    legacy_label = f'"{translated_rel}"'
+                else:
+                    legacy_label = f'"{rel_type.lower()}"'
+            else:
+                legacy_label = '""'
+
+            plantuml_code = f'Rel_{rel_type}({self.from_element}, {self.to_element}, {legacy_label})'
 
         return plantuml_code
 

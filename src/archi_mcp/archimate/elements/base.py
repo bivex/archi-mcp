@@ -95,19 +95,24 @@ class NotePosition(str, Enum):
     RIGHT = "right"
 
 
-class ComponentPort(BaseModel):
-    """Port definition for component interfaces."""
-    id: str = Field(..., description="Unique port identifier")
-    name: str = Field(..., description="Port display name")
-    direction: PortDirection = Field(PortDirection.BIDIRECTIONAL, description="Port direction")
-    description: Optional[str] = Field(None, description="Port description")
-
-
 class ElementNote(BaseModel):
     """Note attached to an element."""
     content: str = Field(..., description="Note content")
     position: NotePosition = Field(NotePosition.RIGHT, description="Note position")
-    is_floating: bool = Field(False, description="Whether this is a floating note")
+    is_floating: bool = Field(False, description="Whether note is floating (not attached to element)")
+    background_color: Optional[str] = Field(None, description="Note background color")
+    border_color: Optional[str] = Field(None, description="Note border color")
+
+
+class ComponentPort(BaseModel):
+    """Port definition for component interfaces."""
+    id: str = Field(..., description="Unique port identifier")
+    name: str = Field(..., description="Port name")
+    direction: PortDirection = Field(PortDirection.BIDIRECTIONAL, description="Port direction")
+    interface_type: Optional[str] = Field(None, description="Interface type or protocol")
+    description: Optional[str] = Field(None, description="Port description")
+
+
 
 
 class ComponentInterface(BaseModel):
@@ -160,7 +165,7 @@ class ArchiMateElement(BaseModel):
     color: Optional[str] = Field(None, description="Custom color for this element")
     show_as_component: bool = Field(False, description="Render as PlantUML component instead of ArchiMate element")
     
-    def to_plantuml(self, show_element_type: bool = False) -> str:
+    def to_plantuml(self, show_element_type: bool = False, show_documentation: bool = False) -> str:
         """Generate PlantUML code for this element.
 
         Args:
@@ -192,6 +197,15 @@ class ArchiMateElement(BaseModel):
         # Add notes
         for note in self.notes:
             lines.append(self._generate_note(note))
+
+        # Add documentation as note if requested and present
+        if show_documentation and self.documentation and not self.notes:
+            doc_note = ElementNote(
+                content=self.documentation,
+                position=NotePosition.BOTTOM,
+                is_floating=False
+            )
+            lines.append(self._generate_note(doc_note))
 
         # Close grouping if started
         if self.grouping_style:
@@ -282,26 +296,49 @@ class ArchiMateElement(BaseModel):
     def _generate_port(self, port: ComponentPort) -> str:
         """Generate PlantUML port code."""
         safe_name = port.name.encode('utf-8').decode('utf-8')
-        return f'{port.direction.value} {port.id} [[{safe_name}]]'
+
+        # Add interface type if specified
+        interface_part = ""
+        if port.interface_type:
+            interface_part = f" ({port.interface_type})"
+
+        # Add description if specified
+        desc_part = ""
+        if port.description:
+            desc_part = f"\\n{port.description}"
+
+        return f'{port.direction.value} {port.id} [[{safe_name}{interface_part}{desc_part}]]'
 
     def _generate_note(self, note: ElementNote) -> str:
         """Generate PlantUML note code."""
         content_lines = note.content.split('\n')
+
+        # Add color styling if specified
+        color_style = ""
+        if note.background_color or note.border_color:
+            color_parts = []
+            if note.background_color:
+                color_parts.append(f"#{note.background_color}")
+            if note.border_color:
+                color_parts.append(f"line:{note.border_color}")
+            if color_parts:
+                color_style = f" {','.join(color_parts)}"
+
         if len(content_lines) == 1:
             # Single line note
             if note.is_floating:
-                return f"note as {self.id}_note\n{note.content}\nend note"
+                return f"note{color_style} as {self.id}_note\n{note.content}\nend note"
             else:
-                return f"note {note.position.value} of {self.id}: {note.content}"
+                return f"note{color_style} {note.position.value} of {self.id}: {note.content}"
         else:
             # Multi-line note
             if note.is_floating:
-                lines = [f"note as {self.id}_note"]
+                lines = [f"note{color_style} as {self.id}_note"]
                 lines.extend(content_lines)
                 lines.append("end note")
                 return "\n".join(lines)
             else:
-                lines = [f"note {note.position.value} of {self.id}"]
+                lines = [f"note{color_style} {note.position.value} of {self.id}"]
                 lines.extend(content_lines)
                 lines.append("end note")
                 return "\n".join(lines)

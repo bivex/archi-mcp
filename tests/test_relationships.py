@@ -53,8 +53,8 @@ class TestArchiMateRelationship:
             description="serves"
         )
         
-        plantuml = relationship.to_plantuml()
-        expected = '"source" --> "target"'
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=False)
+        expected = 'Rel_Serving(source, target, "")'
         assert plantuml == expected
     
     def test_relationship_plantuml_with_direction(self):
@@ -68,9 +68,9 @@ class TestArchiMateRelationship:
             label="realizes"
         )
         
-        plantuml = relationship.to_plantuml()
+        plantuml = relationship.to_plantuml(show_labels=True, use_arrow_styles=False)
         # Direction is layout hint only, not part of PlantUML syntax
-        expected = '"source" --> "target" Down : realizes'
+        expected = 'Rel_Realization(source, target, "realizes")'
         assert plantuml == expected
     
     def test_relationship_validation_success(self):

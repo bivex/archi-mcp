@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from ..utils.exceptions import ArchiMateRelationshipError
 from .relationships.types import ArchiMateRelationshipType
+from .relationships.model import ArrowStyle
 
 
 # RelationshipType enum moved to relationships.types to avoid duplication
@@ -19,52 +20,8 @@ class RelationshipDirection(str, Enum):
     RIGHT = "Right"
 
 
-class ArchiMateRelationship(BaseModel):
-    """ArchiMate relationship definition."""
-    
-    id: str = Field(..., description="Unique identifier for the relationship")
-    from_element: str = Field(..., description="Source element ID")
-    to_element: str = Field(..., description="Target element ID")
-    relationship_type: RelationshipType = Field(..., description="Type of relationship")
-    direction: Optional[RelationshipDirection] = Field(None, description="Optional direction")
-    description: Optional[str] = Field(None, description="Relationship description")
-    label: Optional[str] = Field(None, description="Relationship label")
-    properties: dict = Field(default_factory=dict, description="Additional properties")
-    
-    def to_plantuml(self, translator=None, show_labels: bool = True) -> str:
-        """Generate PlantUML code for this relationship.
-        
-        Args:
-            translator: Optional translator for relationship labels
-            show_labels: Whether to display relationship labels and custom names
-        
-        Returns:
-            PlantUML relationship code string
-        """
-        # Build relationship type (direction is layout hint only, not part of PlantUML syntax)
-        rel_type = self.relationship_type.value
-        
-        # Build label based on show_labels setting
-        if show_labels:
-            # Show labels - use custom label, description, or translated relationship type
-            label = self.label or self.description or ""
-            if label:
-                label = f'"{label}"'
-            else:
-                # Use translated relationship type as default label
-                if translator:
-                    translated_rel = translator.translate_relationship(self.relationship_type.value)
-                    label = f'"{translated_rel}"'
-                else:
-                    label = f'"{rel_type.lower()}"'
-        else:
-            # Hide labels - use empty string for clean connections
-            label = '""'
-        
-        # Generate PlantUML relationship
-        plantuml_code = f'Rel_{rel_type}({self.from_element}, {self.to_element}, {label})'
-        
-        return plantuml_code
+
+
     
     def validate_relationship(self, elements: dict) -> List[str]:
         """Validate the relationship according to ArchiMate specification.

@@ -23,6 +23,23 @@ class DiagramLayout(BaseModel):
     component_style: str = "uml2"  # uml1, uml2, rectangle
     show_component_icons: bool = True  # show ArchiMate icons
     enable_styling: bool = True  # enable enhanced visual styling
+    show_documentation: bool = False  # show element documentation as notes
+    use_arrow_styles: bool = False  # use new arrow style format for relationships
+
+    # Advanced layout controls
+    layout_engine: str = "default"  # default, sfdp, dot, neato, fdp, twopi, circo
+    rankdir: str = "TB"  # TB (top-bottom), BT (bottom-top), LR (left-right), RL (right-left)
+    concentrate: bool = False  # merge multiple edges
+    splines: str = "ortho"  # ortho, curved, line, polyline, spline
+    overlap: str = "prism"  # prism, voronoi, scalexy, compress, false
+    nodesep: float = 0.25  # minimum separation between nodes
+    ranksep: float = 0.5  # minimum separation between ranks
+
+    # Hierarchical grouping
+    enable_hierarchical_grouping: bool = False
+    grouping_depth: int = 1  # how many levels to group
+    group_by_aspect: bool = False  # group by ArchiMate aspects too
+    show_empty_groups: bool = False  # show groups even if empty
 
 
 class ArchiMateGenerator:
@@ -154,11 +171,24 @@ class ArchiMateGenerator:
             lines.append(f"' Description: {description}")
             lines.append("")
 
-        # Set direction
+        # Set direction and advanced layout options
         if self.layout.direction == "vertical":
             lines.append("top to bottom direction")
         elif self.layout.direction == "horizontal":
             lines.append("left to right direction")
+
+        # Add advanced layout controls
+        if self.layout.layout_engine != "default":
+            lines.append(f"!pragma layout {self.layout.layout_engine}")
+
+        if self.layout.concentrate:
+            lines.append("skinparam concentrate true")
+
+        if self.layout.nodesep != 0.25:
+            lines.append(f"skinparam nodesep {self.layout.nodesep}")
+
+        if self.layout.ranksep != 0.5:
+            lines.append(f"skinparam ranksep {self.layout.ranksep}")
 
         lines.append("")
         
@@ -192,8 +222,8 @@ class ArchiMateGenerator:
             lines.extend(plantuml_code.split('\n'))
     
     def _generate_elements_by_layer(self, lines: List[str]) -> None:
-        """Generate elements grouped by layer."""
-        # Group elements by layer
+        """Generate elements grouped by layer with advanced hierarchical grouping."""
+        # Group elements by layer and optionally by aspect
         layers = {}
         for element in self.elements.values():
             layer = element.layer.value
@@ -201,13 +231,21 @@ class ArchiMateGenerator:
                 layers[layer] = []
             layers[layer].append(element)
 
+        # Apply hierarchical grouping if enabled
+        if self.layout.enable_hierarchical_grouping and self.layout.grouping_depth > 0:
+            self._generate_hierarchical_grouping(lines, layers)
+        else:
+            self._generate_simple_layer_grouping(lines, layers)
+
+    def _generate_simple_layer_grouping(self, lines: List[str], layers: Dict[str, List]) -> None:
+        """Generate simple layer-based grouping."""
         # Generate each layer with grouping for multi-layer diagrams
         if len(layers) > 1:
             for layer_name, layer_elements in layers.items():
                 translated_layer = self.translator.translate_layer(layer_name)
                 lines.append(f"package \"{translated_layer}\" {{")
                 for element in layer_elements:
-                    plantuml_code = element.to_plantuml(show_element_type=self.layout.show_element_types)
+                    plantuml_code = element.to_plantuml(show_element_type=self.layout.show_element_types, show_documentation=self.layout.show_documentation)
                     for line in plantuml_code.split('\n'):
                         lines.append("  " + line)
                 lines.append("}")
@@ -218,18 +256,60 @@ class ArchiMateGenerator:
                 translated_layer = self.translator.translate_layer(layer_name)
                 lines.append(f"' {translated_layer}")
                 for element in layer_elements:
-                    plantuml_code = element.to_plantuml(show_element_type=self.layout.show_element_types)
+                    plantuml_code = element.to_plantuml(show_element_type=self.layout.show_element_types, show_documentation=self.layout.show_documentation)
                     lines.extend(plantuml_code.split('\n'))
                 lines.append("")
+
+    def _generate_hierarchical_grouping(self, lines: List[str], layers: Dict[str, List]) -> None:
+        """Generate hierarchical grouping by layer and aspect."""
+        # First group by layer
+        for layer_name, layer_elements in layers.items():
+            translated_layer = self.translator.translate_layer(layer_name)
+            lines.append(f"package \"{translated_layer}\" {{")
+            lines.append("")
+
+            if self.layout.group_by_aspect:
+                # Group within layer by aspect
+                aspects = {}
+                for element in layer_elements:
+                    aspect = element.aspect.value
+                    if aspect not in aspects:
+                        aspects[aspect] = []
+                    aspects[aspect].append(element)
+
+                for aspect_name, aspect_elements in aspects.items():
+                    if len(aspect_elements) > 0 or self.layout.show_empty_groups:
+                        translated_aspect = self.translator.translate_aspect(aspect_name)
+                        lines.append(f"  package \"{translated_aspect}\" {{")
+                        for element in aspect_elements:
+                            plantuml_code = element.to_plantuml(show_element_type=self.layout.show_element_types, show_documentation=self.layout.show_documentation)
+                            for line in plantuml_code.split('\n'):
+                                lines.append("    " + line)
+                        lines.append("  }")
+                        lines.append("")
+
+            else:
+                # Just layer grouping
+                for element in layer_elements:
+                    plantuml_code = element.to_plantuml(show_element_type=self.layout.show_element_types, show_documentation=self.layout.show_documentation)
+                    for line in plantuml_code.split('\n'):
+                        lines.append("  " + line)
+
+            lines.append("}")
+            lines.append("")
     
     def _generate_relationships(self, lines: List[str]) -> None:
         """Generate relationships."""
         if not self.relationships:
             return
-            
+
         lines.append("' Relationships")
         for relationship in self.relationships:
-            lines.append(relationship.to_plantuml(self.translator, show_labels=self.layout.show_relationship_labels))
+            lines.append(relationship.to_plantuml(
+                self.translator,
+                show_labels=self.layout.show_relationship_labels,
+                use_arrow_styles=self.layout.use_arrow_styles
+            ))
     
     def _generate_legend(self, lines: List[str]) -> None:
         """Generate diagram legend."""
