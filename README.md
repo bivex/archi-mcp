@@ -7,8 +7,8 @@
 [![ArchiMate](https://img.shields.io/badge/ArchiMate-3.2-orange.svg)](https://www.opengroup.org/archimate-forum/archimate-overview)
 [![PlantUML](https://img.shields.io/badge/PlantUML-Compatible-lightblue.svg)](https://plantuml.com/)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol-purple.svg)](https://modelcontextprotocol.io/)
-[![Tests](https://img.shields.io/badge/Tests-194%20Passing-brightgreen.svg)](#-development)
-[![Coverage](https://img.shields.io/badge/Coverage-67%25-success.svg)](#-development)
+[![Tests](https://img.shields.io/badge/Tests-201%20Passing-brightgreen.svg)](#-development)
+[![Coverage](https://img.shields.io/badge/Coverage-59%25-success.svg)](#-development)
 [![Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](#-overview)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blueviolet.svg)](https://docs.claude.com/en/docs/claude-code)
 [![Claude Desktop](https://img.shields.io/badge/Claude%20Desktop-Compatible-blueviolet.svg)](https://claude.ai/download)
@@ -33,7 +33,7 @@ ArchiMate MCP Server fills a crucial gap in the MCP ecosystem by providing dedic
 - **2 Core MCP Tools**: Focused diagram creation and element normalization testing
 - **Real-time Error Analysis**: Actionable troubleshooting guidance with pattern recognition and fix suggestions
 - **FastMCP 2.8+ Integration**: Modern MCP protocol implementation with comprehensive schema discovery
-- **Production-Ready Testing**: 182 passing tests with 70% coverage and comprehensive test suites across all layers
+- **Production-Ready Testing**: 201 passing tests with 59% coverage and comprehensive test suites across all layers
 - **Multi-Language Support**: Automatic language detection (Slovak/English) with customizable relationship labels
 - **Advanced Layout Control**: Configurable direction, spacing, grouping with environment variable defaults
 
@@ -51,6 +51,30 @@ uv sync
 
 # Download PlantUML JAR (required for diagram generation)
 curl -L https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -o plantuml.jar
+
+# Optional: Test the installation
+uv run python -c "import archi_mcp; print('✅ Installation successful!')"
+```
+
+### Running the MCP Server
+
+#### Direct Execution (for development/testing)
+```bash
+# Run the MCP server directly
+uv run python -m archi_mcp.server
+
+# Or with specific log level
+ARCHI_MCP_LOG_LEVEL=DEBUG uv run python -m archi_mcp.server
+```
+
+#### Via Claude Desktop
+Configure Claude Desktop as shown below, then restart Claude Desktop to load the new MCP server.
+
+#### Via Claude Code CLI
+```bash
+# Claude Code will automatically discover and use MCP servers
+# configured in your claude_desktop_config.json
+claude
 ```
 
 ### Upgrading to Latest Version
@@ -76,14 +100,16 @@ uv sync
 curl -L https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -o plantuml.jar
 ```
 
-### Claude Desktop Configuration
+### Claude Desktop Configuration (mcp.json)
 
-Add to your Claude Desktop configuration file:
+**📍 Configuration file location:**
 
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`  
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-#### Configuration for local installation:
+**⚠️ Important:** Replace `/path/to/your/archi-mcp` with the actual absolute path to your ArchiMate MCP project directory.
+
+#### Complete configuration:
 ```json
 {
   "mcpServers": {
@@ -112,6 +138,21 @@ Add to your Claude Desktop configuration file:
   }
 }
 ```
+
+**🚀 Setup steps:**
+1. Create or edit the `claude_desktop_config.json` file at the location above
+2. Add the configuration above, replacing `/path/to/your/archi-mcp` with your actual project path
+3. Save the file and restart Claude Desktop
+4. The ArchiMate MCP server will be automatically available in Claude Desktop
+
+**✅ Verification:**
+After setup, ask Claude: *"What MCP tools are available?"* - you should see `archi-mcp` tools listed.
+
+**🔧 Troubleshooting:**
+- **"MCP server not found"**: Check that the path in `"cwd"` and `"args"` is correct and absolute
+- **"Command failed"**: Ensure `uv` is installed and `python -m archi_mcp.server` works from your project directory
+- **"Import errors"**: Run `uv sync` in your project directory to ensure dependencies are installed
+- **"Java not found"**: Ensure Java/OpenJDK is available (see installation steps above)
 
 ### Environment Variables
 
@@ -163,17 +204,34 @@ Add to your Claude Desktop configuration file:
 - **ARCHI_MCP_HTTP_HOST**: Host for diagram server (`localhost`, `0.0.0.0`). Default: `localhost`
 
 
+### Available MCP Tools
+
+Once configured, ArchiMate MCP Server provides these tools in Claude Desktop:
+
+#### `create_archimate_diagram`
+Creates ArchiMate diagrams from natural language descriptions with full parameter control:
+- **Input**: Text description, elements, relationships, and optional parameters
+- **Output**: Generated diagrams in multiple formats with direct URLs
+
+#### `load_diagram_from_file`
+Loads and renders existing ArchiMate diagrams from JSON files:
+- **Input**: Path to JSON file with diagram definition
+- **Output**: Regenerated diagrams with current PlantUML version
+
 ### Basic Usage
 
-Once configured, you can use ArchiMate MCP Server through Claude Desktop:
-
-**Diagram Generation:**
+**Diagram Generation Example:**
 ```
 Create a simple service-oriented diagram with:
 - A customer facing business service
 - An application service implementing it
 - A supporting technology node
 Show how the layers interact.
+```
+
+**File Loading Example:**
+```
+Load the diagram from examples/flower_business_corrected.json and regenerate it.
 ```
 
 The server automatically:
@@ -313,7 +371,13 @@ Test element type normalization across all ArchiMate layers:
 git clone https://github.com/entira/archi-mcp.git
 cd archi-mcp
 uv sync --dev
+
+# Run tests (Java required for PlantUML validation)
+export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
 uv run pytest
+
+# Or use the convenience script
+./test_with_java.sh
 ```
 
 ### Project Structure
@@ -326,7 +390,7 @@ archi-mcp/
 │   ├── xml_export/          # XML export functionality
 │   ├── utils/               # Logging and exceptions
 │   └── server.py            # FastMCP server entry point
-├── tests/                   # Test suites (194 tests, 66% coverage)
+├── tests/                   # Test suites (201 tests, 59% coverage)
 ├── docs/                    # Documentation and diagrams
 ```
 
