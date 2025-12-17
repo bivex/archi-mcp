@@ -7,7 +7,6 @@ from .main import mcp
 
 # Import models and utilities
 from .models import ElementInput, RelationshipInput, DiagramInput
-from .main import mcp
 
 # Import server functions
 from .http_server import (
@@ -19,54 +18,64 @@ from .http_server import (
     find_free_port
 )
 
-# Import main server functions - using lazy imports to avoid circular dependencies
-def _get_server_module():
-    """Lazy import of server module to avoid circular imports."""
-    import importlib
-    return importlib.import_module('archi_mcp.server')
+# Server functions are available through direct import from the server module
+# These are imported at the end to avoid circular imports during module loading
 
-# Wrapper functions for server functions
-def translate_relationship_labels(*args, **kwargs):
-    return _get_server_module().translate_relationship_labels(*args, **kwargs)
+def _import_server_functions():
+    """Import server functions from the main server.py module."""
+    try:
+        import importlib.util
+        import sys
+        from pathlib import Path
 
-def get_env_setting(*args, **kwargs):
-    return _get_server_module().get_env_setting(*args, **kwargs)
+        # Load the server.py file directly
+        server_py_path = Path(__file__).parent.parent / 'server.py'
+        spec = importlib.util.spec_from_file_location('server_impl', server_py_path)
+        server_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(server_module)
 
-def is_config_locked(*args, **kwargs):
-    return _get_server_module().is_config_locked(*args, **kwargs)
+        # Make functions available at module level
+        globals().update({
+            'translate_relationship_labels': server_module.translate_relationship_labels,
+            'get_env_setting': server_module.get_env_setting,
+            'is_config_locked': server_module.is_config_locked,
+            'get_layout_setting': server_module.get_layout_setting,
+            'detect_language_from_content': server_module.detect_language_from_content,
+            'normalize_element_type': server_module.normalize_element_type,
+            'normalize_layer': server_module.normalize_layer,
+            'normalize_relationship_type': server_module.normalize_relationship_type,
+            'validate_element_input': server_module.validate_element_input,
+            'validate_relationship_input': server_module.validate_relationship_input,
+            'validate_relationship_name': server_module.validate_relationship_name,
+            '_validate_plantuml_renders': server_module._validate_plantuml_renders,
+            '_create_archimate_diagram_impl': server_module._create_archimate_diagram_impl,
+            '_load_diagram_from_file_impl': server_module._load_diagram_from_file_impl,
+        })
 
-def get_layout_setting(*args, **kwargs):
-    return _get_server_module().get_layout_setting(*args, **kwargs)
+        # Update __all__
+        __all__.extend([
+            'translate_relationship_labels',
+            'get_env_setting',
+            'is_config_locked',
+            'get_layout_setting',
+            'detect_language_from_content',
+            'normalize_element_type',
+            'normalize_layer',
+            'normalize_relationship_type',
+            'validate_element_input',
+            'validate_relationship_input',
+            'validate_relationship_name',
+            '_validate_plantuml_renders',
+            '_create_archimate_diagram_impl',
+            '_load_diagram_from_file_impl',
+        ])
 
-def detect_language_from_content(*args, **kwargs):
-    return _get_server_module().detect_language_from_content(*args, **kwargs)
+    except Exception as e:
+        # If import fails, functions won't be available
+        pass
 
-def normalize_element_type(*args, **kwargs):
-    return _get_server_module().normalize_element_type(*args, **kwargs)
-
-def normalize_layer(*args, **kwargs):
-    return _get_server_module().normalize_layer(*args, **kwargs)
-
-def normalize_relationship_type(*args, **kwargs):
-    return _get_server_module().normalize_relationship_type(*args, **kwargs)
-
-def validate_element_input(*args, **kwargs):
-    return _get_server_module().validate_element_input(*args, **kwargs)
-
-def validate_relationship_input(*args, **kwargs):
-    return _get_server_module().validate_relationship_input(*args, **kwargs)
-
-def validate_relationship_name(*args, **kwargs):
-    return _get_server_module().validate_relationship_name(*args, **kwargs)
-
-def _validate_plantuml_renders(*args, **kwargs):
-    return _get_server_module()._validate_plantuml_renders(*args, **kwargs)
-
-def _create_archimate_diagram_impl(*args, **kwargs):
-    return _get_server_module()._create_archimate_diagram_impl(*args, **kwargs)
-
-def _load_diagram_from_file_impl(*args, **kwargs):
-    return _get_server_module()._load_diagram_from_file_impl(*args, **kwargs)
+# Import functions after module is loaded
+_import_server_functions()
 
 def _add_markdown_header(*args, **kwargs):
     return _get_server_module()._add_markdown_header(*args, **kwargs)
@@ -85,6 +94,18 @@ from .error_handler import (
     _add_troubleshooting_suggestions,
     _build_enhanced_error_response,
 )
+
+# Import generator
+from ..archimate import ArchiMateGenerator
+
+# Create global generator instance
+generator = ArchiMateGenerator()
+
+# Import diagram creation function (lazy to avoid circular imports)
+def create_archimate_diagram(diagram):
+    """Lazy import wrapper for create_archimate_diagram."""
+    from .request_processors.diagram_processor import create_archimate_diagram as _impl
+    return _impl(diagram)
 
 # Utility functions
 def assert_plantuml_valid(plantuml_code: str):
@@ -116,23 +137,6 @@ __all__ = [
     "http_server_port",
     "http_server_thread",
     "http_server_running",
-    "translate_relationship_labels",
-    "get_env_setting",
-    "is_config_locked",
-    "get_layout_setting",
-    "detect_language_from_content",
-    "normalize_element_type",
-    "normalize_layer",
-    "normalize_relationship_type",
-    "validate_element_input",
-    "validate_relationship_input",
-    "validate_relationship_name",
-    "_validate_plantuml_renders",
-    # "create_archimate_diagram",  # Temporarily disabled due to circular import
-    "create_diagram_from_file",
-    "test_element_normalization",
-    "_create_archimate_diagram_impl",
-    "_load_diagram_from_file_impl",
     "cleanup_failed_exports",
     "_add_markdown_header",
     "assert_plantuml_valid",
@@ -142,5 +146,6 @@ __all__ = [
     "_build_enhanced_error_response",
     "get_exports_directory",
     "create_export_directory",
+    "generator",
     "main"
 ]

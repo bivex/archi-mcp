@@ -291,14 +291,6 @@ validator = ArchiMateValidator()
 
 # Import HTTP server functionality
 from .server.http_server import start_http_server
-
-    INFLUENCE = "Influence"  # Element influences another element
-    REALIZATION = "Realization"  # Element realizes or implements another element
-    SERVING = "Serving"  # Element serves another element
-    SPECIALIZATION = "Specialization"  # Is-a relationship, inheritance
-    TRIGGERING = "Triggering"  # Element triggers another element
-
-
 # Pydantic models for input validation with comprehensive schema
 class ElementInput(BaseModel):
     """ArchiMate element with comprehensive validation and capability discovery.
@@ -2072,14 +2064,6 @@ from .server.request_processors.diagram_processor import create_archimate_diagra
 create_archimate_diagram_tool = create_archimate_diagram
 create_diagram_from_file_tool = create_diagram_from_file
 test_element_normalization_tool = test_element_normalization
-    """Generate production-ready ArchiMate diagrams with comprehensive capability discovery.
-
-    This is the main MCP tool for creating ArchiMate diagrams. For full documentation
-    see the implementation function _create_archimate_diagram_impl.
-    """
-    return _create_archimate_diagram_impl(diagram)
-
-
 # Removed validate_archimate_model - not needed in simplified API
 
 def _load_diagram_from_file_impl(file_path: str) -> str:
@@ -2122,14 +2106,6 @@ def _load_diagram_from_file_impl(file_path: str) -> str:
 
 
 # Tool definitions are now in request_processors.diagram_processor
-    """Test element type normalization across all ArchiMate layers."""
-    try:
-
-# Removed get_debug_log_info - not needed in simplified API
-
-
-
-
 
 # Import main server implementation
 from .server.main import main
