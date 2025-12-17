@@ -172,8 +172,8 @@ def validate_custom_relationship_name(custom_name: str, formal_relationship_type
     if len(words) > 4:
         return False, f"Custom relationship name must be maximum 4 words. Current: '{custom_name}' ({len(words)} words). Try: '{' '.join(words[:4])}'"
     
-    if len(custom_name) > 30:
-        return False, f"Custom relationship name must be maximum 30 characters. Current: '{custom_name}' ({len(custom_name)} chars)"
+    if len(custom_name) > MAX_RELATIONSHIP_NAME_LENGTH:
+        return False, f"Custom relationship name must be maximum {MAX_RELATIONSHIP_NAME_LENGTH} characters. Current: '{custom_name}' ({len(custom_name)} chars)"
     
     # Define valid synonyms for each formal relationship type
     relationship_synonyms = {
@@ -385,94 +385,11 @@ def start_http_server():
         logger.error(f"Failed to start HTTP server: {e}. Install starlette and uvicorn.")
         return None
 
-# Comprehensive ArchiMate Element Type Enums by Layer
-class BusinessElementType(str, Enum):
-    """Business Layer elements - actors, roles, processes, services, and objects."""
-    BUSINESS_ACTOR = "Business_Actor"
-    BUSINESS_ROLE = "Business_Role"
-    BUSINESS_COLLABORATION = "Business_Collaboration"
-    BUSINESS_INTERFACE = "Business_Interface"
-    BUSINESS_FUNCTION = "Business_Function"
-    BUSINESS_PROCESS = "Business_Process"
-    BUSINESS_EVENT = "Business_Event"
-    BUSINESS_SERVICE = "Business_Service"
-    BUSINESS_OBJECT = "Business_Object"
-    BUSINESS_CONTRACT = "Business_Contract"
-    BUSINESS_REPRESENTATION = "Business_Representation"
-    LOCATION = "Location"
-
-class ApplicationElementType(str, Enum):
-    """Application Layer elements - components, services, interfaces, and data objects."""
-    APPLICATION_COMPONENT = "Application_Component"
-    APPLICATION_COLLABORATION = "Application_Collaboration"
-    APPLICATION_INTERFACE = "Application_Interface"
-    APPLICATION_FUNCTION = "Application_Function"
-    APPLICATION_INTERACTION = "Application_Interaction"
-    APPLICATION_PROCESS = "Application_Process"
-    APPLICATION_EVENT = "Application_Event"
-    APPLICATION_SERVICE = "Application_Service"
-    DATA_OBJECT = "Data_Object"
-
-class TechnologyElementType(str, Enum):
-    """Technology Layer elements - nodes, devices, software, networks, and artifacts."""
-    NODE = "Node"
-    DEVICE = "Device"
-    SYSTEM_SOFTWARE = "System_Software"
-    TECHNOLOGY_COLLABORATION = "Technology_Collaboration"
-    TECHNOLOGY_INTERFACE = "Technology_Interface"
-    PATH = "Path"
-    COMMUNICATION_NETWORK = "Communication_Network"
-    TECHNOLOGY_FUNCTION = "Technology_Function"
-    TECHNOLOGY_PROCESS = "Technology_Process"
-    TECHNOLOGY_INTERACTION = "Technology_Interaction"
-    TECHNOLOGY_EVENT = "Technology_Event"
-    TECHNOLOGY_SERVICE = "Technology_Service"
-    ARTIFACT = "Artifact"
-
-class PhysicalElementType(str, Enum):
-    """Physical Layer elements - equipment, facilities, distribution networks, and materials."""
-    EQUIPMENT = "Equipment"
-    FACILITY = "Facility"
-    DISTRIBUTION_NETWORK = "Distribution_Network"
-    MATERIAL = "Material"
-
-class MotivationElementType(str, Enum):
-    """Motivation Layer elements - stakeholders, drivers, goals, requirements, and principles."""
-    STAKEHOLDER = "Stakeholder"
-    DRIVER = "Driver"
-    ASSESSMENT = "Assessment"
-    GOAL = "Goal"
-    OUTCOME = "Outcome"
-    PRINCIPLE = "Principle"
-    REQUIREMENT = "Requirement"
-    CONSTRAINT = "Constraint"
-    MEANING = "Meaning"
-    VALUE = "Value"
-
-class StrategyElementType(str, Enum):
-    """Strategy Layer elements - resources, capabilities, courses of action, and value streams."""
-    RESOURCE = "Resource"
-    CAPABILITY = "Capability"
-    COURSE_OF_ACTION = "Course_of_Action"
-    VALUE_STREAM = "Value_Stream"
-
-class ImplementationElementType(str, Enum):
-    """Implementation Layer elements - work packages, deliverables, events, plateaus, and gaps."""
-    WORK_PACKAGE = "Work_Package"
-    DELIVERABLE = "Deliverable"
-    IMPLEMENTATION_EVENT = "Implementation_Event"
-    PLATEAU = "Plateau"
-    GAP = "Gap"
-
-class ArchiMateLayerType(str, Enum):
-    """ArchiMate 3.2 specification layers."""
-    BUSINESS = "Business"
-    APPLICATION = "Application"
-    TECHNOLOGY = "Technology"
-    PHYSICAL = "Physical"
-    MOTIVATION = "Motivation"
-    STRATEGY = "Strategy"
-    IMPLEMENTATION = "Implementation"
+    INFLUENCE = "Influence"  # Element influences another element
+    REALIZATION = "Realization"  # Element realizes or implements another element
+    SERVING = "Serving"  # Element serves another element
+    SPECIALIZATION = "Specialization"  # Is-a relationship, inheritance
+    TRIGGERING = "Triggering"  # Element triggers another element
 
 class ArchiMateRelationshipType(str, Enum):
     """Complete ArchiMate 3.2 relationship types with descriptions."""
@@ -483,10 +400,20 @@ class ArchiMateRelationshipType(str, Enum):
     COMPOSITION = "Composition"  # Whole-part relationship, parts cannot exist independently
     FLOW = "Flow"  # Transfer of information, money, goods, etc.
     INFLUENCE = "Influence"  # Element influences another element
-    REALIZATION = "Realization"  # Element realizes or implements another element
+    REALIZATION = "Realization"  # Element realizes another element
     SERVING = "Serving"  # Element serves another element
     SPECIALIZATION = "Specialization"  # Is-a relationship, inheritance
     TRIGGERING = "Triggering"  # Element triggers another element
+
+class ArchiMateLayerType(str, Enum):
+    """ArchiMate 3.2 specification layers."""
+    BUSINESS = "Business"
+    APPLICATION = "Application"
+    TECHNOLOGY = "Technology"
+    PHYSICAL = "Physical"
+    MOTIVATION = "Motivation"
+    STRATEGY = "Strategy"
+    IMPLEMENTATION = "Implementation"
 
 class LayoutDirectionType(str, Enum):
     """Layout direction options for diagram generation."""
@@ -1607,17 +1534,14 @@ def _validate_png_file(png_file_path: Path) -> tuple[bool, str]:
         if file_size == 0:
             return False, "PNG file is empty (0 bytes)"
         
-        if file_size < 25:  # PNG header + IHDR minimum is ~25 bytes
+        if file_size < PNG_MIN_SIZE:  # PNG header + IHDR minimum
             return False, f"PNG file too small ({file_size} bytes)"
-        
+
         # Check PNG magic header (first 8 bytes)
         with open(png_file_path, 'rb') as f:
             header = f.read(8)
-            
-        # PNG signature: 137 80 78 71 13 10 26 10 (in decimal)
-        png_signature = bytes([137, 80, 78, 71, 13, 10, 26, 10])
-        
-        if header != png_signature:
+
+        if header != PNG_SIGNATURE:
             return False, f"Invalid PNG header. Expected PNG signature, got: {header.hex()}"
         
         # Additional check: try to read IHDR chunk (basic PNG structure)
@@ -1627,10 +1551,10 @@ def _validate_png_file(png_file_path: Path) -> tuple[bool, str]:
                 chunk_size = int.from_bytes(f.read(4), 'big')
                 chunk_type = f.read(4)
                 
-                if chunk_type != b'IHDR':
+                if chunk_type != PNG_IHDR_TYPE:
                     return False, f"First chunk is not IHDR, got: {chunk_type}"
-                
-                if chunk_size != 13:  # IHDR should be exactly 13 bytes
+
+                if chunk_size != IHDR_CHUNK_SIZE:  # IHDR should be exactly 13 bytes
                     return False, f"Invalid IHDR chunk size: {chunk_size}"
                     
         except Exception as chunk_error:
@@ -1640,6 +1564,15 @@ def _validate_png_file(png_file_path: Path) -> tuple[bool, str]:
         
     except Exception as e:
         return False, f"PNG validation error: {str(e)}"
+
+# Constants for file validation and processing
+PNG_SIGNATURE = bytes([137, 80, 78, 71, 13, 10, 26, 10])  # PNG file signature
+PNG_MIN_SIZE = 25  # Minimum PNG file size (header + IHDR)
+IHDR_CHUNK_SIZE = 13  # IHDR chunk size in bytes
+PNG_IHDR_TYPE = b'IHDR'  # PNG IHDR chunk type
+
+MAX_RELATIONSHIP_NAME_LENGTH = 30  # Maximum characters in custom relationship name
+MAX_RELATIONSHIP_WORDS = 4  # Maximum words in custom relationship name
 
 # Core MCP Tools
 

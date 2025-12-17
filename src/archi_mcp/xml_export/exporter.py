@@ -8,6 +8,20 @@ import uuid
 import os
 from datetime import datetime
 from typing import Dict, List, Optional, Any
+
+# Layout and positioning constants
+DEFAULT_LAYER_HEIGHT = 160  # Vertical space between layers
+DEFAULT_ELEMENT_WIDTH = 300  # Horizontal space between elements
+DEFAULT_MARGIN_X = 80  # Left margin
+DEFAULT_MARGIN_Y = 80  # Top margin
+DEFAULT_CANVAS_WIDTH = 1200  # Assumed canvas width for centering
+DEFAULT_ELEMENT_HEIGHT = 60  # Default element height
+DEFAULT_ELEMENT_WIDTH_XML = 200  # Default element width in XML
+LAYER_THRESHOLD_Y = 80  # Y-distance threshold for different layers
+LAYER_THRESHOLD_X = 100  # X-distance threshold for layout decisions
+ELEMENT_SPACING_Y = 100  # Vertical spacing between elements
+BENDPOINT_OFFSET_X = 100  # Horizontal offset for bendpoints
+BENDPOINT_OFFSET_Y = 30  # Vertical offset for bendpoints
 from pathlib import Path
 import logging
 
@@ -427,8 +441,8 @@ class ArchiMateXMLExporter:
                 bounds = etree.SubElement(child, "bounds")
                 bounds.set("x", str(position["x"]))
                 bounds.set("y", str(position["y"]))
-                bounds.set("width", "200")
-                bounds.set("height", "60")
+                bounds.set("width", str(DEFAULT_ELEMENT_WIDTH_XML))
+                bounds.set("height", str(DEFAULT_ELEMENT_HEIGHT))
                 
                 # Add sourceConnection elements as children
                 for relationship in relationships:
@@ -454,15 +468,15 @@ class ArchiMateXMLExporter:
                             target_pos = element_positions.get(target_element.id, {"x": 50, "y": 50})
                             
                             # Add bendpoints for cross-layer connections to avoid overlap
-                            if abs(source_pos["y"] - target_pos["y"]) > 80:  # Different layers
+                            if abs(source_pos["y"] - target_pos["y"]) > LAYER_THRESHOLD_Y:  # Different layers
                                 bendpoints = self._calculate_connection_bendpoints(source_pos, target_pos)
                                 if bendpoints:
                                     for bp_idx, (bx, by) in enumerate(bendpoints):
                                         bendpoint = etree.SubElement(source_connection, "bendpoint")
-                                        bendpoint.set("startX", str(bx - source_pos["x"] - 100))  # Relative to source center
-                                        bendpoint.set("startY", str(by - source_pos["y"] - 30))
-                                        bendpoint.set("endX", str(bx - target_pos["x"] - 100))    # Relative to target center  
-                                        bendpoint.set("endY", str(by - target_pos["y"] - 30))
+                                        bendpoint.set("startX", str(bx - source_pos["x"] - BENDPOINT_OFFSET_X))  # Relative to source center
+                                        bendpoint.set("startY", str(by - source_pos["y"] - BENDPOINT_OFFSET_Y))
+                                        bendpoint.set("endX", str(bx - target_pos["x"] - BENDPOINT_OFFSET_X))    # Relative to target center
+                                        bendpoint.set("endY", str(by - target_pos["y"] - BENDPOINT_OFFSET_Y))
             
             # Set viewpoint property
             viewpoint_prop = etree.SubElement(view, "property")
@@ -508,10 +522,10 @@ class ArchiMateXMLExporter:
                 element_connections[relationship.to_element]["incoming"].append(relationship.from_element)
         
         # Layout configuration - optimized for visual clarity
-        layer_height = 160  # Vertical space between layers (increased for group padding)
-        element_width = 300   # Horizontal space between elements (increased for readability)
-        start_x = 80          # More margin from left
-        start_y = 80          # More margin from top
+        layer_height = DEFAULT_LAYER_HEIGHT  # Vertical space between layers
+        element_width = DEFAULT_ELEMENT_WIDTH   # Horizontal space between elements
+        start_x = DEFAULT_MARGIN_X          # Left margin
+        start_y = DEFAULT_MARGIN_Y          # Top margin
         max_elements_per_row = 3  # Fewer elements per row for better readability
         
         current_y = start_y
@@ -556,7 +570,7 @@ class ArchiMateXMLExporter:
             sorted_elements = self._sort_elements_by_centrality(layer_elements, element_connections)
             
             # Calculate optimal spacing to center the elements on the canvas
-            canvas_width = 1200  # Assume canvas width for centering
+            canvas_width = DEFAULT_CANVAS_WIDTH  # Canvas width for centering
             total_elements_width = len(sorted_elements) * element_width
             center_offset = (canvas_width - total_elements_width) // 2
             current_x = max(start_x, center_offset)
@@ -581,7 +595,7 @@ class ArchiMateXMLExporter:
                     # Move to next row if needed
                     if elements_in_current_row >= max_elements_per_row:
                         current_x = start_x
-                        current_y += 100  # Move down
+                        current_y += ELEMENT_SPACING_Y  # Move down
                         elements_in_current_row = 0
         
         return positions
@@ -649,12 +663,12 @@ class ArchiMateXMLExporter:
         dy = target_pos["y"] - source_pos["y"]
         
         # For cross-layer connections (vertical), add a bendpoint to make nice curves
-        if abs(dy) > 80:  # Different layers
+        if abs(dy) > LAYER_THRESHOLD_Y:  # Different layers
             # Add a midpoint for smooth routing
             mid_y = source_pos["y"] + dy // 2
-            
+
             # If horizontal distance is small, create a straight vertical path
-            if abs(dx) < 100:
+            if abs(dx) < LAYER_THRESHOLD_X:
                 # Simple vertical connection
                 bendpoints.append((source_pos["x"] + 100, mid_y))  # Element center + offset
             else:
