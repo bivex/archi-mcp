@@ -1,7 +1,7 @@
 """ArchiMate relationship model definitions."""
 
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pydantic import BaseModel, Field
 
 from ...utils.exceptions import ArchiMateRelationshipError
@@ -16,6 +16,45 @@ class RelationshipDirection(str, Enum):
     RIGHT = "Right"
 
 
+class ArrowStyle(str, Enum):
+    """Arrow style variations for relationships."""
+    SOLID = "-->"  # solid arrow
+    DASHED = "..>"  # dashed arrow (dependency)
+    SOLID_REVERSE = "<--"  # reverse solid
+    DASHED_REVERSE = "<.."  # reverse dashed
+    BIDIRECTIONAL = "<-->"  # bidirectional
+    COMPOSITION = "*-->"  # composition (filled diamond)
+    AGGREGATION = "o-->"  # aggregation (empty diamond)
+    ASSIGNMENT = "--*"  # assignment (to filled diamond)
+    ASSIGNMENT_REVERSE = "*--"  # assignment (from filled diamond)
+    SERVING = "--("  # serving (to circle)
+    SERVING_REVERSE = ")--"  # serving (from circle)
+    ACCESS_READ = "-->>"  # access read
+    ACCESS_WRITE = "<<--"  # access write
+    ACCESS_READ_WRITE = "<<-->>"  # access read/write
+    INFLUENCE = "..>>"  # influence
+    FLOW = "~>"  # flow
+    TRIGGERING = "->>"  # triggering
+    SPECIALIZATION = "--|>"  # specialization
+    REALIZATION = "..|>"  # realization
+
+
+# Relationship type to arrow style mapping
+RELATIONSHIP_ARROW_STYLES: Dict[ArchiMateRelationshipType, ArrowStyle] = {
+    ArchiMateRelationshipType.ASSIGNMENT: ArrowStyle.ASSIGNMENT,
+    ArchiMateRelationshipType.AGGREGATION: ArrowStyle.AGGREGATION,
+    ArchiMateRelationshipType.COMPOSITION: ArrowStyle.COMPOSITION,
+    ArchiMateRelationshipType.SERVING: ArrowStyle.SERVING,
+    ArchiMateRelationshipType.ACCESS: ArrowStyle.ACCESS_READ,
+    ArchiMateRelationshipType.INFLUENCE: ArrowStyle.INFLUENCE,
+    ArchiMateRelationshipType.FLOW: ArrowStyle.FLOW,
+    ArchiMateRelationshipType.TRIGGERING: ArrowStyle.TRIGGERING,
+    ArchiMateRelationshipType.SPECIALIZATION: ArrowStyle.SPECIALIZATION,
+    ArchiMateRelationshipType.REALIZATION: ArrowStyle.REALIZATION,
+    ArchiMateRelationshipType.ASSOCIATION: ArrowStyle.SOLID,
+}
+
+
 class ArchiMateRelationship(BaseModel):
     """ArchiMate relationship definition."""
 
@@ -27,6 +66,9 @@ class ArchiMateRelationship(BaseModel):
     description: Optional[str] = Field(None, description="Relationship description")
     label: Optional[str] = Field(None, description="Relationship label")
     properties: dict = Field(default_factory=dict, description="Additional properties")
+    arrow_style: Optional[ArrowStyle] = Field(None, description="Custom arrow style")
+    line_style: str = Field("solid", description="Line style: solid, dashed, dotted")
+    color: Optional[str] = Field(None, description="Custom color for this relationship")
 
     def to_plantuml(self, translator=None, show_labels: bool = True) -> str:
         """Generate PlantUML code for this relationship.
@@ -38,10 +80,32 @@ class ArchiMateRelationship(BaseModel):
         Returns:
             PlantUML relationship code
         """
-        # Determine relationship direction
-        direction_str = ""
+        # Determine arrow style
+        arrow_style = self.arrow_style
+        if not arrow_style:
+            # Use default style based on relationship type
+            arrow_style = RELATIONSHIP_ARROW_STYLES.get(self.relationship_type, ArrowStyle.SOLID)
+
+        # Apply line style modifications
+        if self.line_style == "dashed":
+            # Convert solid arrows to dashed
+            arrow_style = ArrowStyle(str(arrow_style.value).replace("--", ".."))
+        elif self.line_style == "dotted":
+            # Convert to dotted (using PlantUML dotted syntax)
+            arrow_style = ArrowStyle(str(arrow_style.value).replace("--", "-.").replace("..", "-."))
+
+        # Handle direction modifications
+        final_arrow = arrow_style.value
         if self.direction:
-            direction_str = f" {self.direction.value}"
+            # Apply directional hints
+            if self.direction == RelationshipDirection.UP:
+                final_arrow = final_arrow.replace("-->", "-up->").replace("..>", "-up.>").replace("<--", "<-up-")
+            elif self.direction == RelationshipDirection.DOWN:
+                final_arrow = final_arrow.replace("-->", "-down->").replace("..>", "-down.>").replace("<--", "<-down-")
+            elif self.direction == RelationshipDirection.LEFT:
+                final_arrow = final_arrow.replace("-->", "-left->").replace("..>", "-left.>").replace("<--", "<-left-")
+            elif self.direction == RelationshipDirection.RIGHT:
+                final_arrow = final_arrow.replace("-->", "-right->").replace("..>", "-right.>").replace("<--", "<-right-")
 
         # Determine relationship label
         label = ""
@@ -53,8 +117,13 @@ class ArchiMateRelationship(BaseModel):
                 translated_type = translator.translate_relationship(self.relationship_type.value)
                 label = f" : {translated_type}"
 
+        # Add color if specified
+        color_str = ""
+        if self.color:
+            color_str = f" #{self.color}"
+
         # Generate PlantUML relationship
-        plantuml_code = f'"{self.from_element}" --> "{self.to_element}"{direction_str}{label}'
+        plantuml_code = f'"{self.from_element}" {final_arrow} "{self.to_element}"{color_str}{label}'
 
         return plantuml_code
 

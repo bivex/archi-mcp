@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from .elements.base import ArchiMateElement
 from .relationships import ArchiMateRelationship
+from .themes import DiagramStyling, DiagramTheme, PlantUMLSkinParams
 from ..utils.exceptions import ArchiMateError, ArchiMateGenerationError
 from ..i18n import ArchiMateTranslator
 
@@ -18,20 +19,25 @@ class DiagramLayout(BaseModel):
     spacing: str = "normal"  # compact, normal, wide
     show_element_types: bool = False  # show element type names (e.g. Business_Actor)
     show_relationship_labels: bool = True  # show relationship labels and custom names
+    theme: DiagramTheme = DiagramTheme.MODERN  # visual theme
+    component_style: str = "uml2"  # uml1, uml2, rectangle
+    show_component_icons: bool = True  # show ArchiMate icons
+    enable_styling: bool = True  # enable enhanced visual styling
 
 
 class ArchiMateGenerator:
     """Generator for PlantUML ArchiMate diagrams."""
-    
+
     def __init__(self, translator: Optional[ArchiMateTranslator] = None):
         """Initialize the ArchiMate generator.
-        
+
         Args:
             translator: Optional translator for multilingual support
         """
         self.elements: Dict[str, ArchiMateElement] = {}
         self.relationships: List[ArchiMateRelationship] = []
         self.layout: DiagramLayout = DiagramLayout()
+        self.styling: DiagramStyling = PlantUMLSkinParams.get_theme_presets()[DiagramTheme.MODERN]
         self.translator = translator or ArchiMateTranslator("en")
         
     def add_element(self, element: ArchiMateElement) -> None:
@@ -72,11 +78,22 @@ class ArchiMateGenerator:
     
     def set_layout(self, layout: DiagramLayout) -> None:
         """Set diagram layout configuration.
-        
+
         Args:
             layout: DiagramLayout configuration
         """
         self.layout = layout
+        # Update styling when layout changes
+        if layout.enable_styling:
+            self.styling = PlantUMLSkinParams.get_theme_presets()[layout.theme]
+
+    def set_styling(self, styling: DiagramStyling) -> None:
+        """Set diagram styling configuration.
+
+        Args:
+            styling: DiagramStyling configuration
+        """
+        self.styling = styling
     
     def generate_plantuml(
         self,
@@ -84,49 +101,65 @@ class ArchiMateGenerator:
         description: Optional[str] = None
     ) -> str:
         """Generate complete PlantUML ArchiMate diagram code.
-        
+
         Args:
             title: Optional diagram title
             description: Optional diagram description
-            
+
         Returns:
             Complete PlantUML code string
-            
+
         Raises:
             ArchiMateGenerationError: If generation fails
         """
         if not self.elements:
             raise ArchiMateGenerationError("No elements defined for diagram generation")
-        
+
+        # Update styling based on current layout theme
+        if self.layout.enable_styling:
+            self.styling = PlantUMLSkinParams.get_theme_presets()[self.layout.theme]
+
         # Start building PlantUML code
         lines = []
-        
+
         # Add PlantUML header with UTF-8 encoding pragma
         lines.append("@startuml")
         lines.append("!pragma charset UTF-8")
         lines.append("!include <archimate/Archimate>")
         lines.append("")
 
-        # Enable UTF-8/Unicode support for Cyrillic and other non-Latin characters
-        lines.append("skinparam defaultFontName Arial")
+        # Add enhanced styling if enabled
+        if self.layout.enable_styling:
+            skinparams = PlantUMLSkinParams.generate_skinparams(self.styling)
+            lines.extend(skinparams)
+            lines.append("")
+
+        # Component style configuration
+        if self.layout.component_style == "uml1":
+            lines.append("skinparam componentStyle uml1")
+        elif self.layout.component_style == "rectangle":
+            lines.append("skinparam componentStyle rectangle")
+        else:  # uml2 (default)
+            lines.append("skinparam componentStyle uml2")
+
         lines.append("")
-        
+
         # Add title if provided
         if title and self.layout.show_title:
             lines.append(f"title {title}")
             lines.append("")
-        
-        # Add description if provided (as a comment since note syntax may cause issues)
+
+        # Add description if provided
         if description:
             lines.append(f"' Description: {description}")
             lines.append("")
-        
+
         # Set direction
         if self.layout.direction == "vertical":
             lines.append("top to bottom direction")
         elif self.layout.direction == "horizontal":
             lines.append("left to right direction")
-        
+
         lines.append("")
         
         # Generate elements - use layout setting for grouping
@@ -155,7 +188,8 @@ class ArchiMateGenerator:
         """Generate elements in sequential order."""
         lines.append("' Elements")
         for element in self.elements.values():
-            lines.append(element.to_plantuml(show_element_type=self.layout.show_element_types))
+            plantuml_code = element.to_plantuml(show_element_type=self.layout.show_element_types)
+            lines.extend(plantuml_code.split('\n'))
     
     def _generate_elements_by_layer(self, lines: List[str]) -> None:
         """Generate elements grouped by layer."""
@@ -166,14 +200,16 @@ class ArchiMateGenerator:
             if layer not in layers:
                 layers[layer] = []
             layers[layer].append(element)
-        
+
         # Generate each layer with grouping for multi-layer diagrams
         if len(layers) > 1:
             for layer_name, layer_elements in layers.items():
                 translated_layer = self.translator.translate_layer(layer_name)
                 lines.append(f"package \"{translated_layer}\" {{")
                 for element in layer_elements:
-                    lines.append("  " + element.to_plantuml(show_element_type=self.layout.show_element_types))
+                    plantuml_code = element.to_plantuml(show_element_type=self.layout.show_element_types)
+                    for line in plantuml_code.split('\n'):
+                        lines.append("  " + line)
                 lines.append("}")
                 lines.append("")
         else:
@@ -182,7 +218,8 @@ class ArchiMateGenerator:
                 translated_layer = self.translator.translate_layer(layer_name)
                 lines.append(f"' {translated_layer}")
                 for element in layer_elements:
-                    lines.append(element.to_plantuml(show_element_type=self.layout.show_element_types))
+                    plantuml_code = element.to_plantuml(show_element_type=self.layout.show_element_types)
+                    lines.extend(plantuml_code.split('\n'))
                 lines.append("")
     
     def _generate_relationships(self, lines: List[str]) -> None:
