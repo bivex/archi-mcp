@@ -56,6 +56,46 @@ curl -L https://github.com/plantuml/plantuml/releases/latest/download/plantuml.j
 uv run python -c "import archi_mcp; print('✅ Installation successful!')"
 ```
 
+### macOS Setup
+
+For optimal performance on macOS, install the required dependencies:
+
+#### Install Java (OpenJDK)
+```bash
+# Install OpenJDK using Homebrew
+brew install openjdk
+
+# Add Java to your PATH (add to ~/.zshrc or ~/.bash_profile)
+echo 'export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+#### Install Graphviz (Required for ArchiMate Diagrams)
+```bash
+# Install Graphviz for diagram generation
+brew install graphviz
+
+# Verify installation
+dot -v
+```
+
+#### Test PlantUML Integration
+```bash
+# Test that PlantUML can generate diagrams
+java -jar plantuml.jar -version
+
+# You should see:
+# PlantUML version 1.2025.x
+# Dot version: dot - graphviz version x.x.x
+# Installation seems OK. File generation OK
+```
+
+#### macOS Troubleshooting
+- **"Java not found"**: Ensure OpenJDK is in your PATH (see installation steps above)
+- **"Dot executable does not exist"**: Install Graphviz using `brew install graphviz`
+- **"PlantUML generation fails"**: Ensure both Java and Graphviz are properly installed and accessible
+- **Permission issues**: The server needs write access to the `exports/` directory for diagram generation
+
 ### Running the MCP Server
 
 #### Direct Execution (for development/testing)
