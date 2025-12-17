@@ -26,8 +26,9 @@ def _validate_plantuml_renders(plantuml_code: str) -> Tuple[bool, str]:
             # Create temporary output file
             output_file = temp_file_path.replace('.puml', '.png')
 
-            # Run PlantUML
-            cmd = ['java', '-jar', plantuml_jar, '-tpng', temp_file_path]
+            # Run PlantUML - try to find Java in common locations
+            java_cmd = _find_java_executable()
+            cmd = [java_cmd, '-jar', plantuml_jar, '-tpng', temp_file_path]
             result = subprocess.run(
                 cmd,
                 capture_output=True,
@@ -73,6 +74,33 @@ def _validate_png_file(png_file_path: Path) -> Tuple[bool, str]:
 
     except Exception as e:
         return False, f"PNG validation error: {str(e)}"
+
+
+def _find_java_executable() -> str:
+    """Find Java executable in common locations."""
+    import shutil
+
+    # Try common Java paths
+    java_paths = [
+        "/opt/homebrew/opt/openjdk/bin/java",  # Homebrew OpenJDK
+        "/usr/local/opt/openjdk/bin/java",     # Homebrew OpenJDK (older)
+        "/Library/Java/JavaVirtualMachines/openjdk.jdk/Contents/Home/bin/java",  # AdoptOpenJDK
+        "/usr/bin/java",                      # System Java
+        "java"                                # Default PATH
+    ]
+
+    for java_path in java_paths:
+        if shutil.which(java_path):
+            # Test if Java actually works
+            try:
+                result = subprocess.run([java_path, "-version"],
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    return java_path
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                continue
+
+    return "java"  # Fallback to PATH
 
 
 def _find_plantuml_jar(debug_log: list = None) -> str:

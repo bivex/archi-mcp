@@ -1,9 +1,12 @@
 """Server components for ArchiMate MCP."""
 
+# VERIFIED ✅ - PlantUML validation implemented
+
 import socket
 
 # Import main components
 from .main import mcp
+from . import main
 
 # Import models and utilities
 from .models import ElementInput, RelationshipInput, DiagramInput

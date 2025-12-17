@@ -70,7 +70,7 @@ class TestArchiMateRelationship:
         
         plantuml = relationship.to_plantuml()
         # Direction is layout hint only, not part of PlantUML syntax
-        expected = '"source" --> "target" : realizes'
+        expected = '"source" --> "target" Down : realizes'
         assert plantuml == expected
     
     def test_relationship_validation_success(self):

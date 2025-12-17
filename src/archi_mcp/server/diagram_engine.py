@@ -377,8 +377,16 @@ def _load_diagram_from_file_impl(file_path: str) -> str:
         with open(json_file, 'r', encoding='utf-8') as f:
             json_content = f.read()
 
-        # Parse as DiagramInput (will use json5 auto-fix)
-        diagram = DiagramInput.model_validate(json_content)
+        # Parse JSON first, then validate as DiagramInput
+        import json
+        try:
+            json_data = json.loads(json_content)
+        except json.JSONDecodeError:
+            # Try with json5 for compatibility
+            from ..utils.json_parser import parse_json_string
+            json_data = parse_json_string(json_content)
+
+        diagram = DiagramInput.model_validate(json_data)
 
         logger.info(f"Successfully loaded diagram from file: {json_file.name}")
         logger.info(f"  Title: {diagram.title}")

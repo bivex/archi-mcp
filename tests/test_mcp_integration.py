@@ -83,13 +83,13 @@ def test_pydantic_model_validation():
     # Test valid relationship input
     valid_relationship = RelationshipInput(
         id="rel_id",
-        from_element="elem1",
-        to_element="elem2", 
+        from_element="test_id",
+        to_element="test_id",
         relationship_type="Realization"
     )
     assert valid_relationship.id == "rel_id"
     assert valid_relationship.relationship_type == "Realization"
-    
+
     # Test valid diagram input
     valid_diagram = DiagramInput(
         elements=[valid_element],
