@@ -64,14 +64,16 @@ current_module.DiagramInput = DiagramInput
 
 
 @mcp.tool()
-def create_archimate_diagram(diagram) -> str:
+def create_archimate_diagram(diagram: dict) -> str:
     """Generate production-ready ArchiMate diagrams with comprehensive capability discovery.
 
     This is the main MCP tool for creating ArchiMate diagrams. For full documentation
     see the implementation function _create_archimate_diagram_impl.
     """
     try:
-        return _create_archimate_diagram_impl(diagram)
+        # Convert dictionary to DiagramInput object
+        diagram_input = DiagramInput.model_validate(diagram)
+        return _create_archimate_diagram_impl(diagram_input)
     except Exception as e:
         logger.error(f"Error creating ArchiMate diagram: {e}")
         raise ArchiMateError(f"Failed to create ArchiMate diagram: {str(e)}")

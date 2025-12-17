@@ -1,0 +1,30 @@
+{
+  "title": "Simple Business Diagram",
+  "description": "A simple example diagram",
+  "language": "en",
+  "elements": [
+    {
+      "id": "customer",
+      "name": "Customer",
+      "element_type": "Business_Actor",
+      "layer": "Business",
+      "description": "End customer"
+    },
+    {
+      "id": "service",
+      "name": "Online Service",
+      "element_type": "Business_Service",
+      "layer": "Business",
+      "description": "Web service for customers"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "r1",
+      "from_element": "customer",
+      "to_element": "service",
+      "relationship_type": "Serving",
+      "label": "uses"
+    }
+  ]
+}

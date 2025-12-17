@@ -23,7 +23,7 @@ from ..archimate.generator import DiagramLayout
 from .models import DiagramInput
 from .config import get_layout_setting
 from .language import detect_language_from_content, translate_relationship_labels
-from .plantuml_validator import _validate_plantuml_renders, _validate_png_file, _find_plantuml_jar
+from .plantuml_validator import _validate_plantuml_renders, _validate_png_file, _find_plantuml_jar, _setup_java_environment
 from .export_manager import get_exports_directory, create_export_directory, cleanup_failed_exports
 from .error_handler import _build_enhanced_error_response
 
@@ -140,6 +140,9 @@ def _generate_images(plantuml_code: str, plantuml_jar: str, debug_log: list) -> 
     """Generate PNG and SVG images from PlantUML code."""
     debug_log.append("Generating images from PlantUML code")
 
+    # Setup Java environment
+    _setup_java_environment()
+
     # Create temporary files for PlantUML processing
     with tempfile.NamedTemporaryFile(mode='w', suffix='.puml', delete=False) as temp_file:
         temp_file.write(plantuml_code)
@@ -161,6 +164,8 @@ def _generate_images(plantuml_code: str, plantuml_jar: str, debug_log: list) -> 
         if result_png.returncode != 0:
             error_msg = result_png.stderr.strip() if result_png.stderr else "Unknown error"
             debug_log.append(f"PNG generation failed: {error_msg}")
+            if "Unable to locate a Java Runtime" in error_msg:
+                raise ArchiMateError("Failed to generate PNG: Java runtime not found. Please install Java (OpenJDK) to use PlantUML. On macOS: 'brew install openjdk'. On Ubuntu/Debian: 'sudo apt install openjdk-21-jdk'.")
             raise ArchiMateError(f"Failed to generate PNG: {error_msg}")
 
         # Validate PNG file

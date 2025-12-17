@@ -9,9 +9,30 @@ from pathlib import Path
 from typing import Tuple
 
 
+def _setup_java_environment():
+    """Setup Java environment variables for PlantUML execution."""
+    # Ensure JAVA_HOME is set if we can find it
+    if not os.getenv("JAVA_HOME"):
+        java_path = _find_java_executable()
+        if java_path and java_path != "java":
+            java_home = os.path.dirname(os.path.dirname(java_path))
+            os.environ["JAVA_HOME"] = java_home
+
+    # Ensure Java bin directory is in PATH
+    java_path = _find_java_executable()
+    if java_path and java_path != "java":
+        java_bin_dir = os.path.dirname(java_path)
+        current_path = os.environ.get("PATH", "")
+        if java_bin_dir not in current_path:
+            os.environ["PATH"] = java_bin_dir + os.pathsep + current_path
+
+
 def _validate_plantuml_renders(plantuml_code: str) -> Tuple[bool, str]:
     """Validate that PlantUML code can be rendered successfully."""
     try:
+        # Setup Java environment
+        _setup_java_environment()
+
         # Find PlantUML jar
         plantuml_jar = _find_plantuml_jar()
         if not plantuml_jar:
@@ -33,7 +54,8 @@ def _validate_plantuml_renders(plantuml_code: str) -> Tuple[bool, str]:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=30  # 30 second timeout
+                timeout=30,  # 30 second timeout
+                env=os.environ.copy()  # Use current environment
             )
 
             # Check if output file was created
@@ -52,7 +74,12 @@ def _validate_plantuml_renders(plantuml_code: str) -> Tuple[bool, str]:
     except subprocess.TimeoutExpired:
         return False, "PlantUML rendering timed out (30 seconds)"
     except FileNotFoundError:
-        return False, "Java runtime not found. Please install Java to use PlantUML."
+        return False, "Java runtime not found. Please install Java (OpenJDK) to use PlantUML. On macOS: 'brew install openjdk'. On Ubuntu/Debian: 'sudo apt install openjdk-21-jdk'."
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        if "Unable to locate a Java Runtime" in error_msg:
+            return False, "Java runtime not found. Please install Java (OpenJDK) to use PlantUML. On macOS: 'brew install openjdk'. On Ubuntu/Debian: 'sudo apt install openjdk-21-jdk'."
+        return False, f"PlantUML execution failed: {error_msg}"
     except Exception as e:
         return False, f"PlantUML validation error: {str(e)}"
 
@@ -80,25 +107,77 @@ def _find_java_executable() -> str:
     """Find Java executable in common locations."""
     import shutil
 
-    # Try common Java paths
-    java_paths = [
-        "/opt/homebrew/opt/openjdk/bin/java",  # Homebrew OpenJDK
-        "/usr/local/opt/openjdk/bin/java",     # Homebrew OpenJDK (older)
-        "/Library/Java/JavaVirtualMachines/openjdk.jdk/Contents/Home/bin/java",  # AdoptOpenJDK
-        "/usr/bin/java",                      # System Java
-        "java"                                # Default PATH
-    ]
-
-    for java_path in java_paths:
-        if shutil.which(java_path):
-            # Test if Java actually works
+    # First, try JAVA_HOME environment variable
+    java_home = os.getenv("JAVA_HOME")
+    if java_home:
+        java_path = os.path.join(java_home, "bin", "java")
+        if os.path.exists(java_path) and os.access(java_path, os.X_OK):
             try:
                 result = subprocess.run([java_path, "-version"],
                                       capture_output=True, text=True, timeout=5)
                 if result.returncode == 0:
                     return java_path
             except (subprocess.TimeoutExpired, FileNotFoundError):
-                continue
+                pass
+
+    # Try common Java paths for macOS and Linux
+    java_paths = [
+        "/opt/homebrew/opt/openjdk/bin/java",          # Homebrew OpenJDK (Apple Silicon)
+        "/usr/local/opt/openjdk/bin/java",             # Homebrew OpenJDK (Intel)
+        "/opt/homebrew/opt/openjdk@21/bin/java",       # Homebrew OpenJDK 21
+        "/opt/homebrew/opt/openjdk@17/bin/java",       # Homebrew OpenJDK 17
+        "/opt/homebrew/opt/openjdk@11/bin/java",       # Homebrew OpenJDK 11
+        "/usr/local/opt/openjdk@21/bin/java",          # Homebrew OpenJDK 21 (Intel)
+        "/usr/local/opt/openjdk@17/bin/java",          # Homebrew OpenJDK 17 (Intel)
+        "/usr/local/opt/openjdk@11/bin/java",          # Homebrew OpenJDK 11 (Intel)
+        "/Library/Java/JavaVirtualMachines/openjdk.jdk/Contents/Home/bin/java",  # AdoptOpenJDK
+        "/usr/bin/java",                               # System Java
+        "/usr/lib/jvm/default/bin/java",               # Linux default
+        "/usr/lib/jvm/java-21-openjdk/bin/java",       # Linux OpenJDK 21
+        "/usr/lib/jvm/java-17-openjdk/bin/java",       # Linux OpenJDK 17
+        "/usr/lib/jvm/java-11-openjdk/bin/java",       # Linux OpenJDK 11
+        "java"                                         # Default PATH
+    ]
+
+    for java_path in java_paths:
+        try:
+            # Use shutil.which for PATH-based lookups, direct check for absolute paths
+            if os.path.isabs(java_path):
+                if os.path.exists(java_path) and os.access(java_path, os.X_OK):
+                    # Test if Java actually works
+                    result = subprocess.run([java_path, "-version"],
+                                          capture_output=True, text=True, timeout=5)
+                    if result.returncode == 0:
+                        return java_path
+            else:
+                # For PATH-based names like "java"
+                found_path = shutil.which(java_path)
+                if found_path:
+                    # Test if Java actually works
+                    result = subprocess.run([found_path, "-version"],
+                                          capture_output=True, text=True, timeout=5)
+                    if result.returncode == 0:
+                        return found_path
+        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+            continue
+
+    # Last resort: try to find java in common directories
+    import glob
+    for pattern in [
+        "/usr/lib/jvm/*/bin/java",
+        "/Library/Java/JavaVirtualMachines/*/Contents/Home/bin/java",
+        "/opt/homebrew/Cellar/openjdk/*/bin/java"
+    ]:
+        matches = glob.glob(pattern)
+        for match in matches:
+            if os.path.exists(match) and os.access(match, os.X_OK):
+                try:
+                    result = subprocess.run([match, "-version"],
+                                          capture_output=True, text=True, timeout=5)
+                    if result.returncode == 0:
+                        return match
+                except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+                    continue
 
     return "java"  # Fallback to PATH
 
