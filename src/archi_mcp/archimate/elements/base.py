@@ -200,19 +200,27 @@ class ArchiMateElement(BaseModel):
         if self.grouping_style:
             lines.extend(self._generate_grouping_start())
 
+        # Determine if we should render as component (either explicitly set or has ports/interfaces)
+        render_as_component = self.show_as_component or bool(self.ports or self.interfaces)
+
         # Generate main element
-        if self.show_as_component:
-            lines.append(self._generate_as_component(show_element_type))
+        if render_as_component:
+            # Check if we need braces (when there are ports or interfaces)
+            has_ports_or_interfaces = bool(self.ports or self.interfaces)
+            if has_ports_or_interfaces:
+                # Generate component with opening brace
+                component_line = self._generate_as_component(show_element_type)
+                lines.append(component_line.rstrip() + " {")
+                # Add interfaces and ports indented
+                for interface in self.interfaces:
+                    lines.append("  " + self._generate_interface(interface))
+                for port in self.ports:
+                    lines.append("  " + self._generate_port(port))
+                lines.append("}")
+            else:
+                lines.append(self._generate_as_component(show_element_type))
         else:
             lines.append(self._generate_as_archimate_element(show_element_type))
-
-        # Add interfaces
-        for interface in self.interfaces:
-            lines.append(self._generate_interface(interface))
-
-        # Add ports
-        for port in self.ports:
-            lines.append(self._generate_port(port))
 
         # Add notes
         for note in self.notes:
