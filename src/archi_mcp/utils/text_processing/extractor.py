@@ -31,24 +31,40 @@ class TextExtractor:
         """
         all_text = []
 
-        # Add element names and descriptions
-        for element in diagram.elements:
-            if element.name:
-                all_text.append(element.name.lower())
-            if element.description:
-                all_text.append(element.description.lower())
-
-        # Add relationship labels and descriptions
-        for rel in diagram.relationships:
-            if rel.label:
-                all_text.append(rel.label.lower())
-            if rel.description:
-                all_text.append(rel.description.lower())
-
-        # Add title and description
-        if diagram.title:
-            all_text.append(diagram.title.lower())
-        if diagram.description:
-            all_text.append(diagram.description.lower())
+        all_text.extend(_extract_text_from_elements(diagram.elements))
+        all_text.extend(_extract_text_from_relationships(diagram.relationships))
+        all_text.extend(_extract_text_from_diagram_metadata(diagram))
 
         return all_text
+
+
+    def _extract_text_from_elements(elements) -> List[str]:
+        """Extract text content from diagram elements."""
+        text_content = []
+        for element in elements:
+            if element.name:
+                text_content.append(element.name.lower())
+            if element.description:
+                text_content.append(element.description.lower())
+        return text_content
+
+
+    def _extract_text_from_relationships(relationships) -> List[str]:
+        """Extract text content from diagram relationships."""
+        text_content = []
+        for rel in relationships:
+            if rel.label:
+                text_content.append(rel.label.lower())
+            if rel.description:
+                text_content.append(rel.description.lower())
+        return text_content
+
+
+    def _extract_text_from_diagram_metadata(diagram) -> List[str]:
+        """Extract text content from diagram title and description."""
+        text_content = []
+        if diagram.title:
+            text_content.append(diagram.title.lower())
+        if diagram.description:
+            text_content.append(diagram.description.lower())
+        return text_content
