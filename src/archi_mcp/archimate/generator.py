@@ -70,6 +70,8 @@ class ArchiMateGenerator:
         self.removed_elements: set = set()  # Elements to remove by ID
         self.hidden_tags: set = set()  # Tags to hide (e.g., $tag)
         self.removed_tags: set = set()  # Tags to remove (e.g., $tag)
+        self.hide_unlinked: bool = False  # Hide elements without relationships
+        self.remove_unlinked: bool = False  # Remove elements without relationships
         self.layout: DiagramLayout = DiagramLayout()
         self.styling: DiagramStyling = PlantUMLSkinParams.get_theme_presets()[DiagramTheme.MODERN]
         self.translator = translator or ArchiMateTranslator("en")
@@ -167,6 +169,19 @@ class ArchiMateGenerator:
         """
         self.hidden_tags.difference_update(tags)
         self.removed_tags.difference_update(tags)
+
+    def hide_unlinked_elements(self) -> None:
+        """Hide all elements that have no relationships."""
+        self.hide_unlinked = True
+
+    def remove_unlinked_elements(self) -> None:
+        """Remove all elements that have no relationships."""
+        self.remove_unlinked = True
+
+    def show_unlinked_elements(self) -> None:
+        """Show all previously hidden/removed unlinked elements."""
+        self.hide_unlinked = False
+        self.remove_unlinked = False
 
     def set_layout(self, layout: DiagramLayout) -> None:
         """Set diagram layout configuration.
@@ -443,6 +458,10 @@ class ArchiMateGenerator:
         if any(tag in self.removed_tags for tag in element.tags):
             return False
 
+        # Check if unlinked elements should be removed
+        if self.remove_unlinked and self._is_element_unlinked(element):
+            return False
+
         # Check if element is hidden (but still included, just not visible)
         # Hidden elements are still generated but marked as hidden
         return True
@@ -457,8 +476,20 @@ class ArchiMateGenerator:
         if any(tag in self.hidden_tags for tag in element.tags):
             return True
 
+        # Check if unlinked elements should be hidden
+        if self.hide_unlinked and self._is_element_unlinked(element):
+            return True
+
         return False
-    
+
+    def _is_element_unlinked(self, element: ArchiMateElement) -> bool:
+        """Check if an element has no relationships."""
+        element_id = element.id
+        for relationship in self.relationships:
+            if relationship.from_element == element_id or relationship.to_element == element_id:
+                return False
+        return True
+
     def _generate_legend(self, lines: List[str]) -> None:
         """Generate diagram legend."""
         lines.append("' Legend")
@@ -481,6 +512,8 @@ class ArchiMateGenerator:
         self.removed_elements.clear()
         self.hidden_tags.clear()
         self.removed_tags.clear()
+        self.hide_unlinked = False
+        self.remove_unlinked = False
     
     def get_element_count(self) -> int:
         """Get number of elements in diagram."""

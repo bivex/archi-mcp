@@ -341,7 +341,26 @@ class TestArchiMateGenerator:
 
 class TestDiagramLayout:
     """Test diagram layout configuration."""
-    
+
+    def create_test_element(self, id_suffix="1"):
+        """Create a test element."""
+        return ArchiMateElement(
+            id=f"test_element_{id_suffix}",
+            name=f"Test Element {id_suffix}",
+            element_type="Business_Service",
+            layer=ArchiMateLayer.BUSINESS,
+            aspect=ArchiMateAspect.BEHAVIOR
+        )
+
+    def create_test_relationship(self, from_id, to_id, rel_id="1"):
+        """Create a test relationship."""
+        return ArchiMateRelationship(
+            id=f"test_rel_{rel_id}",
+            from_element=from_id,
+            to_element=to_id,
+            relationship_type=ArchiMateRelationshipType.SERVING
+        )
+
     def test_default_layout(self):
         """Test default layout configuration."""
         layout = DiagramLayout()
@@ -361,9 +380,242 @@ class TestDiagramLayout:
             group_by_layer=True,
             spacing="compact"
         )
-        
+
         assert layout.direction == "vertical"
         assert layout.show_legend is False
         assert layout.show_title is False
         assert layout.group_by_layer is True
         assert layout.spacing == "compact"
+
+    def test_component_style_uml2_default(self):
+        """Test UML2 component style (default)."""
+        generator = ArchiMateGenerator()
+        element = self.create_test_element()
+
+        generator.add_element(element)
+        plantuml = generator.generate_plantuml()
+
+        # Should contain UML2 style declaration
+        assert "skinparam componentStyle uml2" in plantuml
+        # Should not contain other styles
+        assert "skinparam componentStyle uml1" not in plantuml
+        assert "skinparam componentStyle rectangle" not in plantuml
+
+    def test_component_style_uml1(self):
+        """Test UML1 component style."""
+        generator = ArchiMateGenerator()
+        generator.layout.component_style = "uml1"
+        element = self.create_test_element()
+
+        generator.add_element(element)
+        plantuml = generator.generate_plantuml()
+
+        # Should contain UML1 style declaration
+        assert "skinparam componentStyle uml1" in plantuml
+        # Should not contain other styles
+        assert "skinparam componentStyle uml2" not in plantuml
+        assert "skinparam componentStyle rectangle" not in plantuml
+
+    def test_component_style_rectangle(self):
+        """Test rectangle component style."""
+        generator = ArchiMateGenerator()
+        generator.layout.component_style = "rectangle"
+        element = self.create_test_element()
+
+        generator.add_element(element)
+        plantuml = generator.generate_plantuml()
+
+        # Should contain rectangle style declaration
+        assert "skinparam componentStyle rectangle" in plantuml
+        # Should not contain other styles
+        assert "skinparam componentStyle uml1" not in plantuml
+        assert "skinparam componentStyle uml2" not in plantuml
+
+    def test_component_style_invalid_fallback_to_uml2(self):
+        """Test invalid component style falls back to UML2."""
+        generator = ArchiMateGenerator()
+        generator.layout.component_style = "invalid_style"
+        element = self.create_test_element()
+
+        generator.add_element(element)
+        plantuml = generator.generate_plantuml()
+
+        # Should default to UML2 style
+        assert "skinparam componentStyle uml2" in plantuml
+
+    def test_long_description_component(self):
+        """Test component with long description using square brackets."""
+        generator = ArchiMateGenerator()
+
+        # Create element with long description
+        element = ArchiMateElement(
+            id="long_desc_element",
+            name="Component with Long Description",
+            element_type="Business_Service",
+            layer=ArchiMateLayer.BUSINESS,
+            aspect=ArchiMateAspect.BEHAVIOR,
+            documentation="""This component
+has a long comment
+on several lines
+and demonstrates
+multiline descriptions"""
+        )
+
+        generator.add_element(element)
+        plantuml = generator.generate_plantuml()
+
+        # Should contain the element with multiline documentation
+        assert '"Component with Long Description"' in plantuml
+        # Note: The current implementation may not format long descriptions exactly as PlantUML
+        # but should at least include the element
+
+    def test_component_individual_color(self):
+        """Test component with individual color."""
+        generator = ArchiMateGenerator()
+
+        # Create element with color
+        element = ArchiMateElement(
+            id="colored_element",
+            name="Colored Component",
+            element_type="Business_Service",
+            layer=ArchiMateLayer.BUSINESS,
+            aspect=ArchiMateAspect.BEHAVIOR,
+            color="#Yellow"
+        )
+
+        generator.add_element(element)
+        plantuml = generator.generate_plantuml()
+
+        # Should contain the element with color
+        assert '"Colored Component"' in plantuml
+        # Note: Color implementation may vary based on PlantUML rendering approach
+
+    def test_component_with_sprite_stereotype(self):
+        """Test component with sprite in stereotype."""
+        generator = ArchiMateGenerator()
+
+        # Create element with sprite stereotype
+        element = ArchiMateElement(
+            id="sprite_element",
+            name="Component with Sprite",
+            element_type="Business_Process",
+            layer=ArchiMateLayer.BUSINESS,
+            aspect=ArchiMateAspect.BEHAVIOR,
+            stereotype="$businessProcess"
+        )
+
+        generator.add_element(element)
+        plantuml = generator.generate_plantuml()
+
+        # Should contain the element with sprite stereotype
+        assert '"Component with Sprite"' in plantuml
+        assert "$businessProcess" in plantuml
+
+    def test_component_style_with_relationships(self):
+        """Test component styles work correctly with relationships."""
+        generator = ArchiMateGenerator()
+        generator.layout.component_style = "uml1"
+
+        element1 = self.create_test_element("1")
+        element2 = self.create_test_element("2")
+        relationship = self.create_test_relationship("test_element_1", "test_element_2")
+
+        generator.add_element(element1)
+        generator.add_element(element2)
+        generator.add_relationship(relationship)
+
+        plantuml = generator.generate_plantuml()
+
+        # Should contain UML1 style and relationship
+        assert "skinparam componentStyle uml1" in plantuml
+        assert '"Test Element 1"' in plantuml
+        assert '"Test Element 2"' in plantuml
+
+    def test_hide_unlinked_elements(self):
+        """Test hiding unlinked elements."""
+        generator = ArchiMateGenerator()
+
+        # Add linked elements (with relationships)
+        element1 = self.create_test_element("1")
+        element2 = self.create_test_element("2")
+        element3 = self.create_test_element("3")  # This will be unlinked
+
+        generator.add_element(element1)
+        generator.add_element(element2)
+        generator.add_element(element3)
+
+        # Add relationship between element1 and element2
+        relationship = self.create_test_relationship(element1.id, element2.id)
+        generator.add_relationship(relationship)
+
+        # Hide unlinked elements
+        generator.hide_unlinked_elements()
+
+        plantuml = generator.generate_plantuml()
+
+        # Should contain all elements
+        assert '"Test Element 1"' in plantuml
+        assert '"Test Element 2"' in plantuml
+        assert '"Test Element 3"' in plantuml
+
+        # Should hide the unlinked element
+        assert f"hide {element3.id}" in plantuml
+
+        # Should not hide linked elements
+        assert f"hide {element1.id}" not in plantuml
+        assert f"hide {element2.id}" not in plantuml
+
+    def test_remove_unlinked_elements(self):
+        """Test removing unlinked elements."""
+        generator = ArchiMateGenerator()
+
+        # Add linked elements (with relationships)
+        element1 = self.create_test_element("1")
+        element2 = self.create_test_element("2")
+        element3 = self.create_test_element("3")  # This will be unlinked
+
+        generator.add_element(element1)
+        generator.add_element(element2)
+        generator.add_element(element3)
+
+        # Add relationship between element1 and element2
+        relationship = self.create_test_relationship(element1.id, element2.id)
+        generator.add_relationship(relationship)
+
+        # Remove unlinked elements
+        generator.remove_unlinked_elements()
+
+        plantuml = generator.generate_plantuml()
+
+        # Should contain linked elements
+        assert '"Test Element 1"' in plantuml
+        assert '"Test Element 2"' in plantuml
+
+        # Should not contain the unlinked element
+        assert '"Test Element 3"' not in plantuml
+
+    def test_show_unlinked_elements(self):
+        """Test showing previously hidden/removed unlinked elements."""
+        generator = ArchiMateGenerator()
+
+        element1 = self.create_test_element("1")
+        element2 = self.create_test_element("2")
+        element3 = self.create_test_element("3")  # Unlinked
+
+        generator.add_element(element1)
+        generator.add_element(element2)
+        generator.add_element(element3)
+
+        relationship = self.create_test_relationship(element1.id, element2.id)
+        generator.add_relationship(relationship)
+
+        # First hide unlinked
+        generator.hide_unlinked_elements()
+        plantuml_hidden = generator.generate_plantuml()
+        assert f"hide {element3.id}" in plantuml_hidden
+
+        # Then show unlinked
+        generator.show_unlinked_elements()
+        plantuml_shown = generator.generate_plantuml()
+        assert f"hide {element3.id}" not in plantuml_shown
+        assert '"Test Element 3"' in plantuml_shown

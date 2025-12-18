@@ -173,13 +173,13 @@ class ArchiMateRelationship(BaseModel):
                 # Handle realization arrows (..|>)
                 elif "..|>" in final_arrow:
                     final_arrow = final_arrow.replace("..|>", f".{direction}.|>")
-                elif ".|>" in final_arrow:
+                elif ".|>" in final_arrow and not any(d in final_arrow for d in ['up', 'down', 'left', 'right', 'up-left', 'up-right', 'down-left', 'down-right']):
                     final_arrow = final_arrow.replace(".|>", f".{direction}.|>")
 
                 # Handle serving arrows (--()
                 elif "--(" in final_arrow:
                     final_arrow = final_arrow.replace("--(", f"-{direction}-(")
-                elif "-(" in final_arrow:
+                elif "-(" in final_arrow and not any(d in final_arrow for d in ['up', 'down', 'left', 'right', 'up-left', 'up-right', 'down-left', 'down-right']):
                     final_arrow = final_arrow.replace("-(", f"-{direction}-(")
 
                 # Handle reverse serving arrows )--
@@ -233,10 +233,14 @@ class ArchiMateRelationship(BaseModel):
                 # Handle standard solid arrows (-->)
                 elif "-->" in final_arrow:
                     final_arrow = final_arrow.replace("-->", f"-{direction}->")
+                elif "->" in final_arrow and "-->" not in final_arrow:
+                    final_arrow = final_arrow.replace("->", f"-{direction}->")
 
                 # Handle standard dashed arrows (..>)
                 elif "..>" in final_arrow:
                     final_arrow = final_arrow.replace("..>", f".{direction}.>")
+                elif ".>" in final_arrow and "..>" not in final_arrow:
+                    final_arrow = final_arrow.replace(".>", f".{direction}.>")
 
                 # Handle flow arrows (~>)
                 elif "~>" in final_arrow:
