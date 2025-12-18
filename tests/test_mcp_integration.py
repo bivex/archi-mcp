@@ -1,3 +1,16 @@
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18 11:23
+# Last Updated: 2025-12-18 11:23
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
+
 """Test MCP integration and protocol compliance."""
 
 import json
@@ -49,7 +62,8 @@ def test_fastmcp_tools_registration():
     # Check expected core tools are registered (4-tool focused API)
     expected_tools = [
         'create_archimate_diagram',
-        'test_element_normalization'
+        'create_diagram_from_file',
+        'test_groups_functionality'
     ]
     
     registered_tools = list(mcp._tool_manager._tools.keys())
@@ -83,13 +97,13 @@ def test_pydantic_model_validation():
     # Test valid relationship input
     valid_relationship = RelationshipInput(
         id="rel_id",
-        from_element="elem1",
-        to_element="elem2", 
+        from_element="test_id",
+        to_element="test_id",
         relationship_type="Realization"
     )
     assert valid_relationship.id == "rel_id"
     assert valid_relationship.relationship_type == "Realization"
-    
+
     # Test valid diagram input
     valid_diagram = DiagramInput(
         elements=[valid_element],
@@ -140,18 +154,18 @@ def test_archimate_layer_validation():
 
 def test_relationship_type_validation():
     """Test ArchiMate relationship type validation."""
-    from archi_mcp.archimate.relationships import RelationshipType
+    from archi_mcp.archimate.relationships.types import ArchiMateRelationshipType
     
     # Test valid relationship types
     valid_types = ["Access", "Aggregation", "Assignment", "Association", "Composition", "Flow", "Influence", "Realization", "Serving", "Specialization", "Triggering"]
     
     for rel_type in valid_types:
-        relationship_type = RelationshipType(rel_type)
+        relationship_type = ArchiMateRelationshipType(rel_type)
         assert relationship_type.value == rel_type
     
     # Test invalid relationship type
     with pytest.raises(ValueError):
-        RelationshipType("InvalidRelationship")
+        ArchiMateRelationshipType("InvalidRelationship")
 
 class TestMCPProtocolCompliance:
     """Test MCP protocol compliance."""
@@ -238,13 +252,13 @@ def test_end_to_end_diagram_creation():
     
     result1 = create_archimate_diagram.fn(diagram_input)
     # Should be a string with success message
-    assert isinstance(result1, str)
-    assert "ArchiMate diagram created successfully" in result1 or "Test" in result1
+    assert result1.success is True
+    assert "ArchiMate diagram generated successfully" in result1.message
     
     # Step 2: Analyze current architecture
     # Diagram creation should complete without errors
     assert result1 is not None
-    assert isinstance(result1, str)
+    assert result1.success is True
 
 def test_performance_basic():
     """Basic performance test for tool execution."""
@@ -279,5 +293,5 @@ def test_performance_basic():
         assert result is not None
     else:
         # If it's a string, check for success message
-        assert isinstance(result, str)
-        assert "ArchiMate diagram created" in result and "successfully" in result
+        assert result.success is True
+        assert "ArchiMate diagram generated successfully" in result.message

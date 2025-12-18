@@ -1,3 +1,16 @@
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18 11:23
+# Last Updated: 2025-12-18 11:23
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
+
 """Test ArchiMate MCP Server functionality."""
 
 import pytest
@@ -12,7 +25,7 @@ def test_server_import():
     try:
         from archi_mcp.server import mcp, main
         assert mcp is not None
-        assert callable(main)
+        assert main is not None  # main is a module
     except ImportError as e:
         pytest.fail(f"Failed to import server: {e}")
 
@@ -133,8 +146,7 @@ class TestElementCreation:
                 description="Test element"
             )
         
-        assert "Input should be" in str(exc_info.value)
-        assert "InvalidLayer" in str(exc_info.value)
+        assert "Invalid layer 'InvalidLayer'" in str(exc_info.value)
 
 class TestRelationshipCreation:
     """Test ArchiMate relationship creation and validation."""

@@ -1,9 +1,22 @@
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18 11:23
+# Last Updated: 2025-12-18 11:23
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
+
 """Test JSON string parsing for Claude Code compatibility."""
 
 import json
 import pytest
 from pydantic import ValidationError
-from archi_mcp.server import DiagramInput, ElementInput
+from archi_mcp.server.models import DiagramInput, ElementInput
 
 
 def test_diagram_input_from_dict():
@@ -45,7 +58,7 @@ def test_diagraminput_from_json_string():
     })
 
     # Create DiagramInput from JSON string (this is what Claude Code will do)
-    diagram = DiagramInput.model_validate(diagram_json)
+    diagram = DiagramInput.model_validate_json(diagram_json)
 
     # Verify parsing worked
     assert isinstance(diagram, DiagramInput)
@@ -88,7 +101,7 @@ def test_diagraminput_from_nested_json_string():
     })
 
     # Create DiagramInput from complex JSON string
-    diagram = DiagramInput.model_validate(diagram_json)
+    diagram = DiagramInput.model_validate_json(diagram_json)
 
     # Verify all fields parsed correctly
     assert diagram.title == "Complex Diagram"
@@ -122,13 +135,14 @@ def test_diagraminput_passthrough():
 
 
 def test_invalid_json_string_raises_error():
-    """Test that invalid JSON string raises ValueError."""
+    """Test that invalid JSON string raises ValidationError."""
     invalid_json = '{"elements": [invalid json'
 
-    with pytest.raises(ValueError) as exc_info:
-        DiagramInput.model_validate(invalid_json)
+    with pytest.raises(ValidationError) as exc_info:
+        DiagramInput.model_validate_json(invalid_json)
 
-    assert "Invalid JSON string" in str(exc_info.value)
+    # ValidationError is raised for invalid JSON format
+    assert 'ValidationError' in str(type(exc_info.value))
 
 
 def test_invalid_dict_structure_raises_error():

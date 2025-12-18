@@ -1,4 +1,4 @@
-# ArchiMate MCP Server
+# ArchiMate MCP Server - AI-Powered Enterprise Architecture Modeling
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -7,35 +7,35 @@
 [![ArchiMate](https://img.shields.io/badge/ArchiMate-3.2-orange.svg)](https://www.opengroup.org/archimate-forum/archimate-overview)
 [![PlantUML](https://img.shields.io/badge/PlantUML-Compatible-lightblue.svg)](https://plantuml.com/)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol-purple.svg)](https://modelcontextprotocol.io/)
-[![Tests](https://img.shields.io/badge/Tests-194%20Passing-brightgreen.svg)](#-development)
-[![Coverage](https://img.shields.io/badge/Coverage-67%25-success.svg)](#-development)
+[![Tests](https://img.shields.io/badge/Tests-201%20Passing-brightgreen.svg)](#-development)
+[![Coverage](https://img.shields.io/badge/Coverage-59%25-success.svg)](#-development)
 [![Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](#-overview)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Compatible-blueviolet.svg)](https://docs.claude.com/en/docs/claude-code)
 [![Claude Desktop](https://img.shields.io/badge/Claude%20Desktop-Compatible-blueviolet.svg)](https://claude.ai/download)
 
-A specialized MCP (Model Context Protocol) server for generating PlantUML ArchiMate diagrams with comprehensive enterprise architecture modeling support.
+AI-powered MCP server for automated ArchiMate diagram generation, enterprise architecture modeling, and business process visualization using PlantUML. Create professional architecture diagrams with Claude AI integration, supporting all 7 ArchiMate layers, 55+ element types, and comprehensive relationship modeling.
 
 > **✨ Claude Code & Claude Desktop Compatible**: Fully tested with both Claude Code CLI and Claude Desktop. Automatic parameter handling ensures seamless operation across both platforms (v1.0.2+).
 
 > **🎯 Live Architecture Demo**: This repository includes a complete architectural blueprint of the ArchiMate MCP Server itself, spanning all 7 ArchiMate layers with 8 coordinated views. See the generated diagrams below for a real-world demonstration of the tool's capabilities.
 
-## 🏗️ Overview
+## 🏗️ Enterprise Architecture Modeling Overview
 
-ArchiMate MCP Server fills a crucial gap in the MCP ecosystem by providing dedicated support for ArchiMate enterprise architecture modeling. While existing MCP servers offer general UML diagram generation, this server focuses specifically on ArchiMate 3.2 specification compliance with full support for all layers, elements, and relationships.
+ArchiMate MCP Server bridges the gap between AI-powered architecture modeling and professional enterprise architecture standards. This specialized Model Context Protocol (MCP) server delivers automated ArchiMate diagram creation, business capability mapping, technology architecture visualization, and comprehensive enterprise modeling using PlantUML. Unlike generic UML tools, it provides complete ArchiMate 3.2 specification compliance with intelligent AI-driven diagram generation, validation, and stakeholder communication features.
 
-### Key Features
+### Enterprise Architecture Modeling Key Features
 
-- **Complete ArchiMate 3.2 Support**: All 55+ elements across **100% of 7 layers** (Motivation, Strategy, Business, Application, Technology, Physical, Implementation)
-- **Universal PlantUML Generation**: All layers now supported with official PlantUML ArchiMate sprites and syntax
-- **Intelligent Input Normalization**: Case-insensitive inputs with automatic correction and helpful error messages
-- **Built-in Validation**: Comprehensive 4-step validation pipeline with real-time error detection
-- **macOS-Optimized PNG/SVG Generation**: Headless mode prevents cursor interference + live HTTP server for instant viewing (uses up-to-date PlantUML 1.2025.4)
-- **2 Core MCP Tools**: Focused diagram creation and element normalization testing
-- **Real-time Error Analysis**: Actionable troubleshooting guidance with pattern recognition and fix suggestions
-- **FastMCP 2.8+ Integration**: Modern MCP protocol implementation with comprehensive schema discovery
-- **Production-Ready Testing**: 182 passing tests with 70% coverage and comprehensive test suites across all layers
-- **Multi-Language Support**: Automatic language detection (Slovak/English) with customizable relationship labels
-- **Advanced Layout Control**: Configurable direction, spacing, grouping with environment variable defaults
+- **Complete ArchiMate 3.2 Compliance**: Full support for 55+ enterprise architecture elements across all 7 ArchiMate layers (Motivation, Strategy, Business, Application, Technology, Physical, Implementation & Migration)
+- **Automated PlantUML Diagram Generation**: Professional architecture visualization with official PlantUML ArchiMate sprites and syntax for business process modeling
+- **AI-Powered Input Intelligence**: Smart case-insensitive input processing with automatic enterprise architecture element correction and contextual error guidance
+- **Enterprise-Grade Validation Pipeline**: 4-step comprehensive validation with real-time architecture modeling error detection and compliance checking
+- **Production-Ready Diagram Export**: macOS-optimized PNG/SVG generation with headless rendering, live HTTP server for instant architecture diagram viewing (PlantUML 1.2025.4)
+- **MCP Integration Tools**: 2 core Model Context Protocol tools plus 5 expert AI prompts for enterprise architecture modeling, business capability mapping, technology stack visualization, implementation roadmapping, and stakeholder communication
+- **Intelligent Error Resolution**: AI-driven troubleshooting with pattern recognition, automated fixes, and architecture modeling best practices guidance
+- **Modern MCP Protocol Implementation**: FastMCP 2.8+ integration with comprehensive schema discovery for seamless Claude AI and enterprise architecture workflow integration
+- **Production-Quality Testing**: 201 comprehensive test cases with 59% coverage across all ArchiMate layers and enterprise modeling scenarios
+- **Multi-Language Architecture Support**: Automatic Slovak/English detection with customizable relationship labels for international enterprise architecture teams
+- **Advanced Visualization Controls**: Configurable layout direction, spacing, grouping, and styling options for professional enterprise architecture documentation
 
 ## 🚀 Quick Start
 
@@ -51,6 +51,70 @@ uv sync
 
 # Download PlantUML JAR (required for diagram generation)
 curl -L https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -o plantuml.jar
+
+# Optional: Test the installation
+uv run python -c "import archi_mcp; print('✅ Installation successful!')"
+```
+
+### macOS Setup
+
+For optimal performance on macOS, install the required dependencies:
+
+#### Install Java (OpenJDK)
+```bash
+# Install OpenJDK using Homebrew
+brew install openjdk
+
+# Add Java to your PATH (add to ~/.zshrc or ~/.bash_profile)
+echo 'export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+#### Install Graphviz (Required for ArchiMate Diagrams)
+```bash
+# Install Graphviz for diagram generation
+brew install graphviz
+
+# Verify installation
+dot -v
+```
+
+#### Test PlantUML Integration
+```bash
+# Test that PlantUML can generate diagrams
+java -jar plantuml.jar -version
+
+# You should see:
+# PlantUML version 1.2025.x
+# Dot version: dot - graphviz version x.x.x
+# Installation seems OK. File generation OK
+```
+
+#### macOS Troubleshooting
+- **"Java not found"**: Ensure OpenJDK is in your PATH (see installation steps above)
+- **"Dot executable does not exist"**: Install Graphviz using `brew install graphviz`
+- **"PlantUML generation fails"**: Ensure both Java and Graphviz are properly installed and accessible
+- **Permission issues**: The server needs write access to the `exports/` directory for diagram generation
+
+### Running the MCP Server
+
+#### Direct Execution (for development/testing)
+```bash
+# Run the MCP server directly
+uv run python -m archi_mcp.server
+
+# Or with specific log level
+ARCHI_MCP_LOG_LEVEL=DEBUG uv run python -m archi_mcp.server
+```
+
+#### Via Claude Desktop
+Configure Claude Desktop as shown below, then restart Claude Desktop to load the new MCP server.
+
+#### Via Claude Code CLI
+```bash
+# Claude Code will automatically discover and use MCP servers
+# configured in your claude_desktop_config.json
+claude
 ```
 
 ### Upgrading to Latest Version
@@ -76,14 +140,16 @@ uv sync
 curl -L https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -o plantuml.jar
 ```
 
-### Claude Desktop Configuration
+### Claude Desktop Configuration (mcp.json)
 
-Add to your Claude Desktop configuration file:
+**📍 Configuration file location:**
 
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`  
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-#### Configuration for local installation:
+**⚠️ Important:** Replace `/path/to/your/archi-mcp` with the actual absolute path to your ArchiMate MCP project directory.
+
+#### Complete configuration:
 ```json
 {
   "mcpServers": {
@@ -112,6 +178,21 @@ Add to your Claude Desktop configuration file:
   }
 }
 ```
+
+**🚀 Setup steps:**
+1. Create or edit the `claude_desktop_config.json` file at the location above
+2. Add the configuration above, replacing `/path/to/your/archi-mcp` with your actual project path
+3. Save the file and restart Claude Desktop
+4. The ArchiMate MCP server will be automatically available in Claude Desktop
+
+**✅ Verification:**
+After setup, ask Claude: *"What MCP tools are available?"* - you should see `archi-mcp` tools listed.
+
+**🔧 Troubleshooting:**
+- **"MCP server not found"**: Check that the path in `"cwd"` and `"args"` is correct and absolute
+- **"Command failed"**: Ensure `uv` is installed and `python -m archi_mcp.server` works from your project directory
+- **"Import errors"**: Run `uv sync` in your project directory to ensure dependencies are installed
+- **"Java not found"**: Ensure Java/OpenJDK is available (see installation steps above)
 
 ### Environment Variables
 
@@ -163,11 +244,23 @@ Add to your Claude Desktop configuration file:
 - **ARCHI_MCP_HTTP_HOST**: Host for diagram server (`localhost`, `0.0.0.0`). Default: `localhost`
 
 
+### Available MCP Tools
+
+Once configured, ArchiMate MCP Server provides these tools in Claude Desktop:
+
+#### `create_archimate_diagram`
+Creates ArchiMate diagrams from natural language descriptions with full parameter control:
+- **Input**: Text description, elements, relationships, and optional parameters
+- **Output**: Generated diagrams in multiple formats with direct URLs
+
+#### `load_diagram_from_file`
+Loads and renders existing ArchiMate diagrams from JSON files:
+- **Input**: Path to JSON file with diagram definition
+- **Output**: Regenerated diagrams with current PlantUML version
+
 ### Basic Usage
 
-Once configured, you can use ArchiMate MCP Server through Claude Desktop:
-
-**Diagram Generation:**
+**Diagram Generation Example:**
 ```
 Create a simple service-oriented diagram with:
 - A customer facing business service
@@ -176,15 +269,20 @@ Create a simple service-oriented diagram with:
 Show how the layers interact.
 ```
 
+**File Loading Example:**
+```
+Load the diagram from examples/flower_business_corrected.json and regenerate it.
+```
+
 The server automatically:
 - Generates all diagram formats (PlantUML, PNG, SVG, XML)
 - Starts an HTTP server for instant viewing
 - Returns direct URLs for immediate access (e.g., http://localhost:8080/diagram.png)
 - Saves all outputs to timestamped directories in `exports/`
 
-## 🏛️ Complete Architecture Demonstration
+## 🏛️ Enterprise Architecture Case Study - Complete ArchiMate Modeling Demo
 
-This repository showcases comprehensive architectural documentation of the ArchiMate MCP Server itself, spanning all 7 ArchiMate layers with **production-ready diagrams**. Each layer is fully supported with complete PlantUML generation:
+This repository demonstrates production-ready enterprise architecture modeling through comprehensive architectural documentation of the ArchiMate MCP Server itself. The project showcases all 7 ArchiMate layers with professional-grade PlantUML-generated diagrams, serving as a complete reference implementation for enterprise architecture visualization, business process modeling, and technology stack documentation:
 
 ### 🎯 **Complete Layered Architecture Overview**
 ![ArchiMate MCP Server - Enhanced Layered Architecture](https://raw.githubusercontent.com/entira/archi-mcp/main/docs/diagrams/archi_mcp_layered_architecture_enhanced.svg)
@@ -245,75 +343,81 @@ This repository showcases comprehensive architectural documentation of the Archi
 
 > **💡 Complete ArchiMate 3.2 Coverage**: All 7 layers successfully generated using the ArchiMate MCP Server itself, demonstrating 100% layer support and production readiness.
 
-## 🏛️ ArchiMate Support
+## 🏛️ Comprehensive ArchiMate 3.2 Enterprise Architecture Support
 
-### Supported Layers
+### Complete ArchiMate Layer Modeling
 
-- **Business Layer**: Actors, roles, processes, services, objects
-- **Application Layer**: Components, services, interfaces, data objects
-- **Technology Layer**: Nodes, devices, software, networks, artifacts
-- **Physical Layer**: Equipment, facilities, distribution networks, materials
-- **Motivation Layer**: Stakeholders, drivers, goals, requirements, principles
-- **Strategy Layer**: Resources, capabilities, courses of action, value streams
-- **Implementation Layer**: Work packages, deliverables, events, plateaus, gaps
+- **Business Layer Architecture**: Business actors, roles, processes, services, and objects for enterprise business process modeling
+- **Application Layer Design**: Application components, services, interfaces, and data objects for software architecture visualization
+- **Technology Infrastructure Layer**: Technology nodes, devices, system software, networks, and artifacts for IT infrastructure modeling
+- **Physical Environment Layer**: Physical equipment, facilities, distribution networks, and materials for infrastructure planning
+- **Motivation & Strategy Layer**: Stakeholders, drivers, goals, requirements, principles, resources, capabilities, and value streams for strategic planning
+- **Implementation & Migration Layer**: Work packages, deliverables, implementation events, plateaus, and gap analysis for transformation planning
 
-### Supported Relationships
+### Enterprise Architecture Relationship Modeling
 
-All 12 ArchiMate relationship types with directional variants:
-- Access, Aggregation, Assignment, Association
-- Composition, Flow, Influence, Realization
-- Serving, Specialization, Triggering
+Complete support for all 12 ArchiMate relationship types with directional variants for comprehensive enterprise modeling:
+- Structural Relationships: Access, Aggregation, Assignment, Association, Composition, Specialization
+- Dynamic Relationships: Flow, Influence, Triggering
+- Dependency Relationships: Serving, Realization
 
-### Junction Support
+### Advanced Modeling Capabilities
 
-- And/Or junctions for complex relationship modeling
-- Grouping and nesting capabilities
+- **Complex Relationship Junctions**: And/Or junctions for sophisticated enterprise architecture relationship modeling
+- **Hierarchical Grouping**: Advanced element grouping and nesting for large-scale enterprise architecture diagrams
+- **Multi-layer Dependencies**: Cross-layer relationship visualization for enterprise architecture analysis
 
-## 🛠️ MCP Tools
+## 🛠️ AI-Powered MCP Enterprise Architecture Tools
 
-The server exposes 2 core tools via FastMCP:
+The ArchiMate MCP Server provides 2 core Model Context Protocol tools for automated enterprise architecture modeling and diagram generation via FastMCP integration:
 
-### 1. **create_archimate_diagram**
-Generate complete ArchiMate diagrams from structured input with:
-- Support for all 55+ element types across 7 layers
-- All 12 ArchiMate relationship types with directional support
-- Intelligent input normalization and validation
-- Multi-format export: PlantUML (.puml), PNG, SVG, ArchiMate XML (.archimate)
-- Built-in HTTP server with direct viewing URLs
-- Comprehensive layout configuration options
-- Multi-language support (auto-detects Slovak/English)
+### 1. **create_archimate_diagram** - Automated Architecture Diagram Generation
+AI-powered enterprise architecture diagram creation from natural language and structured input:
+- Complete support for 55+ ArchiMate element types across all 7 enterprise architecture layers
+- Full implementation of 12 ArchiMate relationship types with directional modeling capabilities
+- Intelligent AI-driven input normalization and enterprise architecture validation
+- Multi-format professional export: PlantUML source, PNG, SVG, and ArchiMate XML for enterprise architecture tools
+- Built-in HTTP server with instant viewing URLs for collaborative architecture reviews
+- Comprehensive layout and styling configuration for enterprise-grade documentation
+- Multi-language enterprise architecture support with automatic Slovak/English detection
 
-### 2. **test_element_normalization**
-Test element type normalization across all ArchiMate layers:
-- Validates case-insensitive input handling
-- Tests common element type mappings
-- Verifies layer and relationship normalization
-- Essential for troubleshooting input issues
+### 2. **test_element_normalization** - Architecture Modeling Validation
+Enterprise architecture element validation and normalization testing tool:
+- Validates intelligent case-insensitive enterprise architecture element processing
+- Tests comprehensive ArchiMate element type mappings and business process terminology
+- Verifies cross-layer relationship normalization for enterprise architecture compliance
+- Essential debugging tool for complex enterprise architecture modeling workflows
 
-### ArchiMate Viewpoints
-- **Layered**: Cross-layer relationships and dependencies
-- **Service Realization**: How services are realized by components
-- **Application Cooperation**: Application component interactions
-- **Technology Usage**: Infrastructure and technology stack
-- **Motivation**: Stakeholders, drivers, goals, and requirements
+### Enterprise Architecture Viewpoints & Modeling Perspectives
+- **Layered Architecture View**: Cross-layer enterprise dependencies and relationship mapping for comprehensive business architecture analysis
+- **Service Realization View**: How business services are implemented by application components and technology infrastructure
+- **Application Cooperation View**: Application component interactions and integration patterns for software architecture design
+- **Technology Usage View**: Infrastructure utilization and technology stack dependencies for IT architecture planning
+- **Motivation & Strategy View**: Stakeholder analysis, business drivers, strategic goals, and enterprise requirements modeling
 
-### Architecture Patterns
-- **Three-Tier Architecture**: Presentation, business logic, data layers
-- **Microservices**: Service-oriented architecture with API gateway
-- **Event-Driven**: Event producers, consumers, and message flows
-- **Layered Service**: Service-oriented layered architecture
-- **CQRS**: Command Query Responsibility Segregation pattern
+### Enterprise Architecture Patterns & Design Templates
+- **Three-Tier Enterprise Architecture**: Presentation layer, business logic layer, and data layer separation for scalable enterprise applications
+- **Microservices Architecture Pattern**: Service-oriented enterprise architecture with API gateways and distributed system design
+- **Event-Driven Architecture**: Asynchronous event processing with producers, consumers, and message flow orchestration for real-time enterprise systems
+- **Layered Service Architecture**: Hierarchical service-oriented architecture design for enterprise application integration
+- **CQRS Enterprise Pattern**: Command Query Responsibility Segregation for optimized enterprise data management and performance
 
-## 🧪 Development
+## 🧪 Enterprise Architecture Tool Development
 
-> 🔧 **For complete development setup, testing, and contribution guidelines, see [CLAUDE.md](CLAUDE.md)**
+> 🔧 **For complete enterprise architecture development setup, automated testing, and open source contribution guidelines, see [CLAUDE.md](CLAUDE.md)**
 
 **Quick Start for Developers:**
 ```bash
 git clone https://github.com/entira/archi-mcp.git
 cd archi-mcp
 uv sync --dev
+
+# Run tests (Java required for PlantUML validation)
+export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
 uv run pytest
+
+# Or use the convenience script
+./test_with_java.sh
 ```
 
 ### Project Structure
@@ -326,7 +430,7 @@ archi-mcp/
 │   ├── xml_export/          # XML export functionality
 │   ├── utils/               # Logging and exceptions
 │   └── server.py            # FastMCP server entry point
-├── tests/                   # Test suites (194 tests, 66% coverage)
+├── tests/                   # Test suites (201 tests, 59% coverage)
 ├── docs/                    # Documentation and diagrams
 ```
 
@@ -342,20 +446,21 @@ Contributions are welcome! The project follows standard open source practices wi
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## 🙏 Enterprise Architecture Standards & Technology Acknowledgments
 
-- [ArchiMate® 3.2 Specification](https://www.opengroup.org/archimate-forum/archimate-overview) by The Open Group
-- [PlantUML](https://plantuml.com/) for diagram generation capabilities
-- [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) for enabling AI assistant integration
-- [Anthropic](https://www.anthropic.com/) for Claude and MCP development
+- [ArchiMate® 3.2 Specification](https://www.opengroup.org/archimate-forum/archimate-overview) by The Open Group - Industry standard for enterprise architecture modeling and business process visualization
+- [PlantUML](https://plantuml.com/) - Professional diagram generation engine for enterprise architecture documentation and technical visualization
+- [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) - Enabling seamless AI-powered enterprise architecture modeling and automated diagram generation
+- [Anthropic](https://www.anthropic.com/) - Claude AI integration for intelligent enterprise architecture analysis and automated modeling workflows
 
-## 🗺️ Roadmap
+## 🗺️ Enterprise Architecture Modeling Roadmap
 
-- [x] Export to ArchiMate Open Exchange Format (Experimental)
-- **PlantUML is the primary output** - fully tested and production-ready
-- **XML export is experimental** - may not be 100% ArchiMate compliant 
-- **Use for exploration** - XML export is bonus functionality for those who need it
-- [ ] Enhanced XML validation and auto-fix capabilities
-- [ ] Additional language support (beyond Slovak/English)
-- [ ] Custom ArchiMate viewpoint templates
+- [x] ArchiMate Open Exchange Format XML Export (Experimental enterprise architecture interchange capability)
+- **PlantUML Professional Output** - Production-ready enterprise architecture visualization and business process diagrams
+- **XML Export Exploration** - Experimental ArchiMate-compliant export for enterprise architecture tool integration
+- **Advanced XML Capabilities** - Enhanced validation, auto-correction, and enterprise architecture standards compliance
+- [ ] Multi-language Enterprise Support (expanding beyond Slovak/English for global enterprise architecture teams)
+- [ ] Custom ArchiMate Viewpoint Templates (pre-built enterprise architecture modeling patterns and frameworks)
+- [ ] Enterprise Architecture Repository Integration (connecting with major EA tools and platforms)
+- [ ] AI-Powered Architecture Analysis (automated enterprise architecture assessment and optimization recommendations)
 

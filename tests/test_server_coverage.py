@@ -1,3 +1,16 @@
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18 11:23
+# Last Updated: 2025-12-18 11:23
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
+
 """Comprehensive tests to improve server.py code coverage."""
 
 import pytest
@@ -21,18 +34,24 @@ class TestLanguageDetection:
             description="Proaktívna starostlivosť o zákazníkov",
             elements=[
                 ElementInput(
-                    id="customer", 
+                    id="customer",
                     name="Zákazník",
                     element_type="Business_Actor",
                     layer="Business",
                     description="Podnikový zákaznícky objekt"
+                ),
+                ElementInput(
+                    id="service",
+                    name="Služba",
+                    element_type="Business_Service",
+                    layer="Business"
                 )
             ],
             relationships=[
                 RelationshipInput(
                     id="rel1",
                     from_element="customer",
-                    to_element="service", 
+                    to_element="service",
                     relationship_type="Access",
                     label="pristupuje"
                 )
@@ -98,42 +117,42 @@ class TestCustomRelationshipValidation:
     
     def test_validate_custom_relationship_success(self):
         """Test successful custom relationship validation."""
-        from archi_mcp.server import validate_custom_relationship_name
+        from archi_mcp.server import validate_relationship_name
         
         # Test valid English synonyms
-        is_valid, error_msg = validate_custom_relationship_name("implements", "Realization")
+        is_valid, error_msg = validate_relationship_name("implements", "Realization")
         # Function signature includes language parameter
         if not is_valid:
             # Test with language parameter
-            is_valid, error_msg = validate_custom_relationship_name("implements", "Realization", "en")
+            is_valid, error_msg = validate_relationship_name("implements", "Realization", "en")
             assert is_valid or "implements" in error_msg
     
     def test_validate_custom_relationship_too_long(self):
         """Test custom relationship name too long."""
-        from archi_mcp.server import validate_custom_relationship_name
+        from archi_mcp.server import validate_relationship_name
         
         # Test name exceeding character limit
         long_name = "this is a very long relationship name that exceeds the limit"
-        is_valid, error_msg = validate_custom_relationship_name(long_name, "Access")
+        is_valid, error_msg = validate_relationship_name(long_name, "Access")
         assert not is_valid
         assert len(error_msg) > 0  # Should return some error message
     
     def test_validate_custom_relationship_too_many_words(self):
         """Test custom relationship name with too many words.""" 
-        from archi_mcp.server import validate_custom_relationship_name
+        from archi_mcp.server import validate_relationship_name
         
-        # Test name with more than 4 words (limit is now 4)
-        is_valid, error_msg = validate_custom_relationship_name("one two three four five", "Access")
+        # Test name with more than 5 words
+        is_valid, error_msg = validate_relationship_name("one two three four five six", "Access")
         # This should fail validation
         assert not is_valid
-        assert "maximum 4 words" in error_msg
+        assert "max 5 words" in error_msg
     
     def test_validate_custom_relationship_invalid_synonym(self):
         """Test invalid synonym for relationship type."""
-        from archi_mcp.server import validate_custom_relationship_name
+        from archi_mcp.server import validate_relationship_name
         
         # Test completely unrelated word
-        is_valid, error_msg = validate_custom_relationship_name("banana", "Realization")
+        is_valid, error_msg = validate_relationship_name("banana", "Realization")
         # Function may be permissive with synonym validation
         # Just verify it returns valid response
         assert isinstance(is_valid, bool)
@@ -141,12 +160,12 @@ class TestCustomRelationshipValidation:
     
     def test_validate_custom_relationship_case_insensitive(self):
         """Test case insensitive validation."""
-        from archi_mcp.server import validate_custom_relationship_name
+        from archi_mcp.server import validate_relationship_name
         
         # Test different cases - just verify function works
-        is_valid1, error_msg1 = validate_custom_relationship_name("IMPLEMENTS", "Realization")
-        is_valid2, error_msg2 = validate_custom_relationship_name("Supports", "Serving") 
-        is_valid3, error_msg3 = validate_custom_relationship_name("realizuje", "realization")
+        is_valid1, error_msg1 = validate_relationship_name("IMPLEMENTS", "Realization")
+        is_valid2, error_msg2 = validate_relationship_name("Supports", "Serving")
+        is_valid3, error_msg3 = validate_relationship_name("realizuje", "realization")
         
         # Just verify the function returns valid tuples
         assert isinstance(is_valid1, bool)
@@ -175,8 +194,7 @@ class TestDiagramValidation:
                 layer="InvalidLayer"
             )
         
-        assert "Input should be" in str(exc_info.value)
-        assert "InvalidLayer" in str(exc_info.value)
+        assert "Invalid layer 'InvalidLayer'" in str(exc_info.value)
     
     def test_validate_element_input_invalid_element_type(self):
         """Test element validation with invalid element type."""
@@ -208,8 +226,7 @@ class TestDiagramValidation:
                 relationship_type="Invalid_Relationship"
             )
         
-        assert "Input should be" in str(exc_info.value)
-        assert "Invalid_Relationship" in str(exc_info.value)
+        assert "Invalid relationship type 'Invalid_Relationship'" in str(exc_info.value)
     
     def test_validate_diagram_basic(self):
         """Test basic diagram validation functions exist."""
@@ -232,40 +249,43 @@ class TestDiagramValidation:
 class TestPlantUMLValidation:
     """Test PlantUML validation error scenarios."""
     
-    @patch('subprocess.run')
-    def test_validate_plantuml_renders_timeout(self, mock_run):
+    @patch('subprocess.Popen')
+    def test_validate_plantuml_renders_timeout(self, mock_popen):
         """Test PlantUML validation timeout."""
-        from archi_mcp.server import _validate_plantuml_renders
+        from archi_mcp.server import validate_plantuml_renders
         import subprocess
-        
-        # Mock timeout exception
-        mock_run.side_effect = subprocess.TimeoutExpired('plantuml', 30)
-        
-        renders_ok, error_msg = _validate_plantuml_renders("@startuml\ntest\n@enduml")
+
+        # Create mock process that times out
+        mock_process = Mock()
+        mock_process.wait.side_effect = subprocess.TimeoutExpired('plantuml', 30)
+        mock_process.communicate.return_value = ("", "")
+        mock_popen.return_value = mock_process
+
+        renders_ok, error_msg = validate_plantuml_renders("@startuml\ntest\n@enduml")
         assert not renders_ok
         assert len(error_msg) > 0
     
-    @patch('subprocess.run')
-    def test_validate_plantuml_renders_file_not_found(self, mock_run):
+    @patch('archi_mcp.server.plantuml_validator.find_plantuml_jar')
+    def test_validate_plantuml_renders_file_not_found(self, mock_find_jar):
         """Test PlantUML validation when jar not found."""
-        from archi_mcp.server import _validate_plantuml_renders
-        
-        # Mock FileNotFoundError 
-        mock_run.side_effect = FileNotFoundError("plantuml.jar not found")
-        
-        renders_ok, error_msg = _validate_plantuml_renders("@startuml\ntest\n@enduml")
+        from archi_mcp.server import validate_plantuml_renders
+
+        # Mock find_plantuml_jar to return None (jar not found)
+        mock_find_jar.return_value = None
+
+        renders_ok, error_msg = validate_plantuml_renders("@startuml\ntest\n@enduml")
         assert not renders_ok
         assert len(error_msg) > 0
     
     @patch('subprocess.run')
     def test_validate_plantuml_renders_system_error(self, mock_run):
         """Test PlantUML validation system error."""
-        from archi_mcp.server import _validate_plantuml_renders
+        from archi_mcp.server import validate_plantuml_renders
         
         # Mock generic exception
         mock_run.side_effect = Exception("System error")
         
-        renders_ok, error_msg = _validate_plantuml_renders("@startuml\ntest\n@enduml")
+        renders_ok, error_msg = validate_plantuml_renders("@startuml\ntest\n@enduml")
         assert not renders_ok
         assert len(error_msg) > 0
 

@@ -1,3 +1,16 @@
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18 11:23
+# Last Updated: 2025-12-18 11:23
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
+
 """Tests to improve generator.py code coverage."""
 
 import pytest
@@ -229,9 +242,16 @@ class TestGeneratorPlantUMLGeneration:
         assert "@startuml" in plantuml
         assert "Business Element" in plantuml
         assert "App Element" in plantuml
-        # Should not contain layer grouping (no rectangle/package declarations)
-        layer_group_indicators = ["rectangle", "package", "folder"]
-        assert not any(indicator in plantuml.lower() for indicator in layer_group_indicators)
+        # Should not contain layer grouping (no rectangle/package/folder declarations for elements)
+        # Check for patterns like: rectangle "name" {, package "name" {, folder "name" {
+        import re
+        grouping_patterns = [
+            r'rectangle\s+"[^"]+"\s*\{',
+            r'package\s+"[^"]+"\s*\{',
+            r'folder\s+"[^"]+"\s*\{'
+        ]
+        for pattern in grouping_patterns:
+            assert not re.search(pattern, plantuml, re.IGNORECASE), f"Found grouping pattern: {pattern}"
     
     def test_generate_plantuml_with_spacing_variations(self):
         """Test PlantUML generation with different spacing options."""

@@ -1,3 +1,16 @@
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18 11:23
+# Last Updated: 2025-12-18 11:23
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
+
 """
 Universal Relationship Fixer
 
@@ -133,25 +146,36 @@ def fix_relationship_universally(source_type: str, target_type: str, relationshi
 def apply_universal_fix(xml_content: str) -> tuple[str, dict]:
     """
     Apply universal relationship fixing to XML content.
-    
+
     Args:
         xml_content: Original XML content
-        
+
     Returns:
         Tuple of (fixed_xml_content, fix_statistics)
     """
+    element_types, relationships, fix_stats = _extract_xml_data(xml_content)
+    fixed_content = xml_content
+
+    for relationship_data in relationships:
+        fixed_content, fix_stats = _apply_fix_to_relationship(
+            relationship_data, element_types, fixed_content, fix_stats)
+
+    return fixed_content, fix_stats
+
+
+def _extract_xml_data(xml_content: str) -> tuple[dict, list, dict]:
+    """Extract elements, relationships, and initialize statistics from XML."""
     import re
-    
+
     # Extract elements for type lookup
     elem_pattern = r'<element xsi:type="archimate:(\w+)" id="([^"]+)" name="([^"]*)"'
     elements = re.findall(elem_pattern, xml_content)
     element_types = {elem_id: elem_type for elem_type, elem_id, name in elements}
-    
-    # Find and fix relationships
+
+    # Find relationships
     rel_pattern = r'<element xsi:type="archimate:(\w+Relationship)" id="([^"]+)" source="([^"]+)" target="([^"]+)"([^>]*)>'
     relationships = re.findall(rel_pattern, xml_content)
-    
-    fixed_content = xml_content
+
     fix_stats = {
         "total_relationships": len(relationships),
         "fixes_applied": 0,
@@ -161,40 +185,50 @@ def apply_universal_fix(xml_content: str) -> tuple[str, dict]:
         "preserved_relationships": 0,
         "fix_details": []
     }
-    
-    for rel_type, rel_id, source_id, target_id, attributes in relationships:
-        source_type = element_types.get(source_id, "Unknown")
-        target_type = element_types.get(target_id, "Unknown")
-        
-        # Get universally safe relationship type
-        fixed_rel_type = fix_relationship_universally(source_type, target_type, rel_type)
-        
-        if fixed_rel_type != rel_type:
-            # Apply fix
-            old_element = f'<element xsi:type="archimate:{rel_type}" id="{rel_id}" source="{source_id}" target="{target_id}"{attributes}>'
-            new_element = f'<element xsi:type="archimate:{fixed_rel_type}" id="{rel_id}" source="{source_id}" target="{target_id}"{attributes}>'
-            
-            if old_element in fixed_content:
-                fixed_content = fixed_content.replace(old_element, new_element)
-                
-                # Track statistics
-                fix_stats["fixes_applied"] += 1
-                
-                if get_element_layer(source_type) == "Unknown" or get_element_layer(target_type) == "Unknown":
-                    fix_stats["unknown_element_fixes"] += 1
-                elif is_cross_layer(source_type, target_type):
-                    fix_stats["cross_layer_fixes"] += 1
-                else:
-                    fix_stats["same_layer_fixes"] += 1
-                
-                fix_detail = f"{rel_id}: {source_type} --[{rel_type}]--> {target_type} → {fixed_rel_type}"
-                fix_stats["fix_details"].append(fix_detail)
-                
-                logger.info(f"Universal fix applied: {fix_detail}")
-        else:
-            fix_stats["preserved_relationships"] += 1
-    
+
+    return element_types, relationships, fix_stats
+
+
+def _apply_fix_to_relationship(relationship_data: tuple, element_types: dict, fixed_content: str, fix_stats: dict) -> tuple[str, dict]:
+    """Apply universal fix to a single relationship if needed."""
+    rel_type, rel_id, source_id, target_id, attributes = relationship_data
+
+    source_type = element_types.get(source_id, "Unknown")
+    target_type = element_types.get(target_id, "Unknown")
+
+    # Get universally safe relationship type
+    fixed_rel_type = fix_relationship_universally(source_type, target_type, rel_type)
+
+    if fixed_rel_type != rel_type:
+        # Apply fix
+        old_element = f'<element xsi:type="archimate:{rel_type}" id="{rel_id}" source="{source_id}" target="{target_id}"{attributes}>'
+        new_element = f'<element xsi:type="archimate:{fixed_rel_type}" id="{rel_id}" source="{source_id}" target="{target_id}"{attributes}>'
+
+        if old_element in fixed_content:
+            fixed_content = fixed_content.replace(old_element, new_element)
+
+            # Update statistics
+            fix_stats["fixes_applied"] += 1
+            _update_fix_statistics(source_type, target_type, fix_stats)
+
+            fix_detail = f"{rel_id}: {source_type} --[{rel_type}]--> {target_type} → {fixed_rel_type}"
+            fix_stats["fix_details"].append(fix_detail)
+
+            logger.info(f"Universal fix applied: {fix_detail}")
+    else:
+        fix_stats["preserved_relationships"] += 1
+
     return fixed_content, fix_stats
+
+
+def _update_fix_statistics(source_type: str, target_type: str, fix_stats: dict):
+    """Update fix statistics based on element types."""
+    if get_element_layer(source_type) == "Unknown" or get_element_layer(target_type) == "Unknown":
+        fix_stats["unknown_element_fixes"] += 1
+    elif is_cross_layer(source_type, target_type):
+        fix_stats["cross_layer_fixes"] += 1
+    else:
+        fix_stats["same_layer_fixes"] += 1
 
 def get_fix_summary(fix_stats: dict) -> str:
     """Generate summary of universal fixes applied."""

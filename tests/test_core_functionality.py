@@ -1,3 +1,16 @@
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18 11:23
+# Last Updated: 2025-12-18 11:23
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
+
 """Test core ArchiMate MCP functionality without FastMCP dependencies."""
 
 import pytest
@@ -91,7 +104,9 @@ def test_aspect_detection():
 
 def test_generator_functionality():
     """Test ArchiMate generator core functionality."""
-    from archi_mcp.server import generator, ElementInput
+    from archi_mcp.archimate import ArchiMateGenerator
+    from archi_mcp.server import ElementInput
+    generator = ArchiMateGenerator()
     from archi_mcp.archimate import ArchiMateElement
     from archi_mcp.archimate.elements.base import ArchiMateLayer, ArchiMateAspect
     
@@ -126,9 +141,10 @@ def test_generator_functionality():
     assert "Test Generator Element" in plantuml_code or "Business_Actor" in plantuml_code
 
 def test_validator_functionality():
-    """Test ArchiMate validator core functionality.""" 
-    from archi_mcp.server import validator
-    
+    """Test ArchiMate validator core functionality."""
+    from archi_mcp.archimate.validator import ArchiMateValidator
+    validator = ArchiMateValidator()
+
     # Test with empty dictionaries (validator expects dict, not list)
     errors = validator.validate_model({}, [])
     
@@ -162,13 +178,25 @@ def test_pydantic_models():
     )
     assert relationship.id == "rel_id"
     
-    # Test valid diagram
+    # Test valid diagram - need elements that match relationship references
+    element1 = ElementInput(
+        id="elem1",
+        name="Element 1",
+        element_type="Business_Actor",
+        layer="Business"
+    )
+    element2 = ElementInput(
+        id="elem2",
+        name="Element 2",
+        element_type="Application_Component",
+        layer="Application"
+    )
     diagram = DiagramInput(
-        elements=[element],
+        elements=[element1, element2],
         relationships=[relationship],
         title="Test Diagram"
     )
-    assert len(diagram.elements) == 1
+    assert len(diagram.elements) == 2
     assert len(diagram.relationships) == 1
 
 def test_invalid_layer_handling():
@@ -187,7 +215,7 @@ def test_invalid_layer_handling():
             layer="InvalidLayer"
         )
     
-    assert "Input should be" in str(exc_info.value)
+    assert "Invalid layer" in str(exc_info.value)
     assert "InvalidLayer" in str(exc_info.value)
 
 def test_archimate_layers():
@@ -207,18 +235,18 @@ def test_archimate_layers():
 
 def test_relationship_types():
     """Test ArchiMate relationship types."""
-    from archi_mcp.archimate.relationships import RelationshipType
+    from archi_mcp.archimate.relationships.types import ArchiMateRelationshipType
     
     # Test valid relationship types
     valid_types = ["Access", "Aggregation", "Assignment", "Association", "Composition", "Flow", "Influence", "Realization", "Serving", "Specialization", "Triggering"]
     
     for rel_type in valid_types:
-        relationship_type = RelationshipType(rel_type)
+        relationship_type = ArchiMateRelationshipType(rel_type)
         assert relationship_type.value == rel_type
     
     # Test invalid relationship type
     with pytest.raises(ValueError):
-        RelationshipType("InvalidRelationship")
+        ArchiMateRelationshipType("InvalidRelationship")
 
 def test_complex_diagram_creation():
     """Test creating complex diagram with multiple elements."""

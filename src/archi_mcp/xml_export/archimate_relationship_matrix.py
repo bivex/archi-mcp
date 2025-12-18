@@ -1,3 +1,16 @@
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18 11:23
+# Last Updated: 2025-12-18 11:23
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
+
 """
 ArchiMate 3.2 Relationship Matrix for Validation
 
@@ -11,7 +24,7 @@ from enum import Enum
 # ArchiMate relationship types
 class RelationshipType(Enum):
     COMPOSITION = "CompositionRelationship"
-    AGGREGATION = "AggregationRelationship" 
+    AGGREGATION = "AggregationRelationship"
     ASSIGNMENT = "AssignmentRelationship"
     REALIZATION = "RealizationRelationship"
     SERVING = "ServingRelationship"
@@ -22,6 +35,38 @@ class RelationshipType(Enum):
     SPECIALIZATION = "SpecializationRelationship"
     ASSOCIATION = "AssociationRelationship"
 
+    @classmethod
+    def get_structural_relationships(cls) -> Set['RelationshipType']:
+        """Get relationships that define structural composition."""
+        return {cls.COMPOSITION, cls.AGGREGATION}
+
+    @classmethod
+    def get_dynamic_relationships(cls) -> Set['RelationshipType']:
+        """Get relationships that represent dynamic behavior."""
+        return {cls.FLOW, cls.TRIGGERING, cls.ASSIGNMENT}
+
+    @classmethod
+    def get_dependency_relationships(cls) -> Set['RelationshipType']:
+        """Get relationships that represent dependencies."""
+        return {cls.SERVING, cls.ACCESS, cls.INFLUENCE, cls.REALIZATION}
+
+    def get_description(self) -> str:
+        """Get a human-readable description of this relationship type."""
+        descriptions = {
+            self.COMPOSITION: "Whole-part relationship where parts cannot exist independently",
+            self.AGGREGATION: "Whole-part relationship where parts can exist independently",
+            self.ASSIGNMENT: "Assignment of responsibility or realization",
+            self.REALIZATION: "Realization of higher-level concepts",
+            self.SERVING: "Service provision between elements",
+            self.ACCESS: "Access to data or resources",
+            self.INFLUENCE: "Influence on behavior or decisions",
+            self.TRIGGERING: "Triggering of events or processes",
+            self.FLOW: "Flow of information, materials, or value",
+            self.SPECIALIZATION: "Specialization/generalization relationship",
+            self.ASSOCIATION: "General association between elements"
+        }
+        return descriptions.get(self, "Relationship type")
+
 # ArchiMate layers
 class Layer(Enum):
     MOTIVATION = "Motivation"
@@ -31,6 +76,47 @@ class Layer(Enum):
     TECHNOLOGY = "Technology"
     PHYSICAL = "Physical"
     IMPLEMENTATION = "Implementation"
+
+    @classmethod
+    def get_core_layers(cls) -> Set['Layer']:
+        """Get the three core operational layers."""
+        return {cls.BUSINESS, cls.APPLICATION, cls.TECHNOLOGY}
+
+    @classmethod
+    def get_supporting_layers(cls) -> Set['Layer']:
+        """Get the supporting governance layers."""
+        return {cls.MOTIVATION, cls.STRATEGY}
+
+    @classmethod
+    def get_implementation_layers(cls) -> Set['Layer']:
+        """Get the implementation layers."""
+        return {cls.IMPLEMENTATION, cls.PHYSICAL}
+
+    def get_description(self) -> str:
+        """Get a human-readable description of this layer."""
+        descriptions = {
+            self.MOTIVATION: "Motivational elements and requirements",
+            self.STRATEGY: "Strategic capabilities and resources",
+            self.BUSINESS: "Business operations and processes",
+            self.APPLICATION: "Application services and components",
+            self.TECHNOLOGY: "Technology infrastructure and platforms",
+            self.PHYSICAL: "Physical infrastructure and facilities",
+            self.IMPLEMENTATION: "Implementation projects and deliverables"
+        }
+        return descriptions.get(self, "Layer")
+
+    def get_layer_level(self) -> int:
+        """Get the hierarchical level of this layer (higher = more concrete)."""
+        levels = {
+            self.STRATEGY: 1,
+            self.MOTIVATION: 2,
+            self.BUSINESS: 3,
+            self.APPLICATION: 4,
+            self.TECHNOLOGY: 5,
+            self.PHYSICAL: 6,
+            self.IMPLEMENTATION: 7,
+        }
+        return levels.get(self, 0)
 
 # ArchiMate relationship compatibility matrix
 # Based on ArchiMate 3.2 specification Table B.1

@@ -1,0 +1,101 @@
+{
+  "title": "Test Grouping Diagram",
+  "description": "Testing if server supports PlantUML grouping constructs",
+  "elements": [
+    {
+      "id": "http_component",
+      "name": "First Component",
+      "element_type": "Application_Component",
+      "layer": "Application",
+      "properties": {
+        "grouping_style": "package",
+        "group_name": "Some Group"
+      }
+    },
+    {
+      "id": "another_component",
+      "name": "Another Component",
+      "element_type": "Application_Component",
+      "layer": "Application",
+      "properties": {
+        "grouping_style": "package",
+        "group_name": "Some Group"
+      }
+    },
+    {
+      "id": "ftp_component",
+      "name": "Second Component",
+      "element_type": "Application_Component",
+      "layer": "Application",
+      "properties": {
+        "grouping_style": "node",
+        "group_name": "Other Groups"
+      }
+    },
+    {
+      "id": "first_component_in_node",
+      "name": "First Component",
+      "element_type": "Application_Component",
+      "layer": "Application",
+      "properties": {
+        "grouping_style": "node",
+        "group_name": "Other Groups"
+      }
+    },
+    {
+      "id": "example1",
+      "name": "Example 1",
+      "element_type": "Application_Component",
+      "layer": "Application",
+      "properties": {
+        "grouping_style": "cloud"
+      }
+    },
+    {
+      "id": "folder3",
+      "name": "Folder 3",
+      "element_type": "Application_Component",
+      "layer": "Application",
+      "properties": {
+        "grouping_style": "folder",
+        "parent_group": "MySql"
+      }
+    },
+    {
+      "id": "frame4",
+      "name": "Frame 4",
+      "element_type": "Application_Component",
+      "layer": "Application",
+      "properties": {
+        "grouping_style": "frame",
+        "parent_group": "MySql"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "ftp_to_first",
+      "from_element": "ftp_component",
+      "to_element": "first_component_in_node",
+      "relationship_type": "Association"
+    },
+    {
+      "id": "another_to_example1",
+      "from_element": "another_component",
+      "to_element": "example1",
+      "relationship_type": "Association"
+    },
+    {
+      "id": "example1_to_folder3",
+      "from_element": "example1",
+      "to_element": "folder3",
+      "relationship_type": "Association"
+    },
+    {
+      "id": "folder3_to_frame4",
+      "from_element": "folder3",
+      "to_element": "frame4",
+      "relationship_type": "Association"
+    }
+  ]
+}

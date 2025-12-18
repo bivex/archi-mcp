@@ -1,0 +1,431 @@
+{
+  "title": "Flower Business Enterprise Architecture",
+  "description": "Comprehensive enterprise architecture for a flower business including e-commerce, inventory management, delivery operations, and customer services",
+  "language": "en",
+  "elements": [
+    {
+      "id": "customer",
+      "name": "Customer",
+      "element_type": "Business_Actor",
+      "layer": "Business",
+      "description": "End customers purchasing flowers"
+    },
+    {
+      "id": "sales_staff",
+      "name": "Sales Staff",
+      "element_type": "Business_Role",
+      "layer": "Business",
+      "description": "Sales personnel handling customer orders"
+    },
+    {
+      "id": "delivery_driver",
+      "name": "Delivery Driver",
+      "element_type": "Business_Role",
+      "layer": "Business",
+      "description": "Drivers delivering flowers to customers"
+    },
+    {
+      "id": "order_process",
+      "name": "Order Processing",
+      "element_type": "Business_Process",
+      "layer": "Business",
+      "description": "Process of receiving and processing customer orders"
+    },
+    {
+      "id": "inventory_management_process",
+      "name": "Inventory Management",
+      "element_type": "Business_Process",
+      "layer": "Business",
+      "description": "Managing flower stock levels and availability"
+    },
+    {
+      "id": "delivery_process",
+      "name": "Delivery Process",
+      "element_type": "Business_Process",
+      "layer": "Business",
+      "description": "Coordinating and executing flower deliveries"
+    },
+    {
+      "id": "customer_service",
+      "name": "Customer Service",
+      "element_type": "Business_Service",
+      "layer": "Business",
+      "description": "Customer support and assistance services"
+    },
+    {
+      "id": "order_service",
+      "name": "Order Service",
+      "element_type": "Business_Service",
+      "layer": "Business",
+      "description": "Service for placing and managing orders"
+    },
+    {
+      "id": "ecommerce_platform",
+      "name": "E-Commerce Platform",
+      "element_type": "Application_Component",
+      "layer": "Application",
+      "description": "Web-based platform for online flower orders"
+    },
+    {
+      "id": "inventory_system",
+      "name": "Inventory Management System",
+      "element_type": "Application_Component",
+      "layer": "Application",
+      "description": "System for tracking flower inventory"
+    },
+    {
+      "id": "order_management_system",
+      "name": "Order Management System",
+      "element_type": "Application_Component",
+      "layer": "Application",
+      "description": "System for managing customer orders"
+    },
+    {
+      "id": "delivery_tracking_system",
+      "name": "Delivery Tracking System",
+      "element_type": "Application_Component",
+      "layer": "Application",
+      "description": "System for tracking delivery status"
+    },
+    {
+      "id": "payment_gateway",
+      "name": "Payment Gateway",
+      "element_type": "Application_Service",
+      "layer": "Application",
+      "description": "Payment processing service"
+    },
+    {
+      "id": "customer_database",
+      "name": "Customer Database",
+      "element_type": "Data_Object",
+      "layer": "Application",
+      "description": "Database storing customer information"
+    },
+    {
+      "id": "inventory_database",
+      "name": "Inventory Database",
+      "element_type": "Data_Object",
+      "layer": "Application",
+      "description": "Database storing inventory data"
+    },
+    {
+      "id": "web_server",
+      "name": "Web Server",
+      "element_type": "Node",
+      "layer": "Technology",
+      "description": "Server hosting the e-commerce platform"
+    },
+    {
+      "id": "application_server",
+      "name": "Application Server",
+      "element_type": "Node",
+      "layer": "Technology",
+      "description": "Server running business applications"
+    },
+    {
+      "id": "database_server",
+      "name": "Database Server",
+      "element_type": "Node",
+      "layer": "Technology",
+      "description": "Server hosting databases"
+    },
+    {
+      "id": "network",
+      "name": "Corporate Network",
+      "element_type": "Communication_Network",
+      "layer": "Technology",
+      "description": "Internal network infrastructure"
+    },
+    {
+      "id": "retail_store",
+      "name": "Retail Store",
+      "element_type": "Facility",
+      "layer": "Physical",
+      "description": "Physical store location"
+    },
+    {
+      "id": "warehouse",
+      "name": "Warehouse",
+      "element_type": "Facility",
+      "layer": "Physical",
+      "description": "Storage facility for flowers"
+    },
+    {
+      "id": "delivery_vehicle",
+      "name": "Delivery Vehicle",
+      "element_type": "Equipment",
+      "layer": "Physical",
+      "description": "Vehicles used for flower delivery"
+    },
+    {
+      "id": "business_owner",
+      "name": "Business Owner",
+      "element_type": "Stakeholder",
+      "layer": "Motivation",
+      "description": "Owner of the flower business"
+    },
+    {
+      "id": "growth_goal",
+      "name": "Business Growth",
+      "element_type": "Goal",
+      "layer": "Motivation",
+      "description": "Goal to expand business operations"
+    },
+    {
+      "id": "customer_satisfaction_goal",
+      "name": "Customer Satisfaction",
+      "element_type": "Goal",
+      "layer": "Motivation",
+      "description": "Goal to maintain high customer satisfaction"
+    },
+    {
+      "id": "online_presence_requirement",
+      "name": "Online Presence",
+      "element_type": "Requirement",
+      "layer": "Motivation",
+      "description": "Requirement to have online ordering capability"
+    },
+    {
+      "id": "ecommerce_capability",
+      "name": "E-Commerce Capability",
+      "element_type": "Capability",
+      "layer": "Strategy",
+      "description": "Capability to sell flowers online"
+    },
+    {
+      "id": "delivery_capability",
+      "name": "Delivery Capability",
+      "element_type": "Capability",
+      "layer": "Strategy",
+      "description": "Capability to deliver flowers to customers"
+    },
+    {
+      "id": "digital_transformation",
+      "name": "Digital Transformation Project",
+      "element_type": "Work_Package",
+      "layer": "Implementation",
+      "description": "Project to implement digital systems"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "r1",
+      "from_element": "customer",
+      "to_element": "order_service",
+      "relationship_type": "Serving",
+      "label": "places orders"
+    },
+    {
+      "id": "r2",
+      "from_element": "sales_staff",
+      "to_element": "order_process",
+      "relationship_type": "Assignment",
+      "label": "performs"
+    },
+    {
+      "id": "r3",
+      "from_element": "delivery_driver",
+      "to_element": "delivery_process",
+      "relationship_type": "Assignment",
+      "label": "performs"
+    },
+    {
+      "id": "r4",
+      "from_element": "order_process",
+      "to_element": "order_service",
+      "relationship_type": "Realization",
+      "label": "realizes"
+    },
+    {
+      "id": "r5",
+      "from_element": "inventory_management_process",
+      "to_element": "order_service",
+      "relationship_type": "Serving",
+      "label": "supports"
+    },
+    {
+      "id": "r6",
+      "from_element": "delivery_process",
+      "to_element": "customer_service",
+      "relationship_type": "Serving",
+      "label": "supports"
+    },
+    {
+      "id": "r7",
+      "from_element": "ecommerce_platform",
+      "to_element": "order_service",
+      "relationship_type": "Realization",
+      "label": "realizes"
+    },
+    {
+      "id": "r8",
+      "from_element": "inventory_system",
+      "to_element": "inventory_management_process",
+      "relationship_type": "Serving",
+      "label": "supports"
+    },
+    {
+      "id": "r9",
+      "from_element": "order_management_system",
+      "to_element": "order_process",
+      "relationship_type": "Serving",
+      "label": "supports"
+    },
+    {
+      "id": "r10",
+      "from_element": "delivery_tracking_system",
+      "to_element": "delivery_process",
+      "relationship_type": "Serving",
+      "label": "supports"
+    },
+    {
+      "id": "r11",
+      "from_element": "payment_gateway",
+      "to_element": "ecommerce_platform",
+      "relationship_type": "Serving",
+      "label": "processes payments"
+    },
+    {
+      "id": "r12",
+      "from_element": "ecommerce_platform",
+      "to_element": "customer_database",
+      "relationship_type": "Access",
+      "label": "reads/writes"
+    },
+    {
+      "id": "r13",
+      "from_element": "inventory_system",
+      "to_element": "inventory_database",
+      "relationship_type": "Access",
+      "label": "reads/writes"
+    },
+    {
+      "id": "r14",
+      "from_element": "web_server",
+      "to_element": "ecommerce_platform",
+      "relationship_type": "Assignment",
+      "label": "hosts"
+    },
+    {
+      "id": "r15",
+      "from_element": "application_server",
+      "to_element": "order_management_system",
+      "relationship_type": "Assignment",
+      "label": "hosts"
+    },
+    {
+      "id": "r16",
+      "from_element": "database_server",
+      "to_element": "customer_database",
+      "relationship_type": "Assignment",
+      "label": "hosts"
+    },
+    {
+      "id": "r17",
+      "from_element": "database_server",
+      "to_element": "inventory_database",
+      "relationship_type": "Assignment",
+      "label": "hosts"
+    },
+    {
+      "id": "r18",
+      "from_element": "web_server",
+      "to_element": "network",
+      "relationship_type": "Assignment",
+      "label": "connected to"
+    },
+    {
+      "id": "r19",
+      "from_element": "application_server",
+      "to_element": "network",
+      "relationship_type": "Assignment",
+      "label": "connected to"
+    },
+    {
+      "id": "r20",
+      "from_element": "database_server",
+      "to_element": "network",
+      "relationship_type": "Assignment",
+      "label": "connected to"
+    },
+    {
+      "id": "r21",
+      "from_element": "retail_store",
+      "to_element": "sales_staff",
+      "relationship_type": "Assignment",
+      "label": "houses"
+    },
+    {
+      "id": "r22",
+      "from_element": "warehouse",
+      "to_element": "inventory_management_process",
+      "relationship_type": "Serving",
+      "label": "stores inventory"
+    },
+    {
+      "id": "r23",
+      "from_element": "delivery_vehicle",
+      "to_element": "delivery_driver",
+      "relationship_type": "Assignment",
+      "label": "used by"
+    },
+    {
+      "id": "r24",
+      "from_element": "business_owner",
+      "to_element": "growth_goal",
+      "relationship_type": "Assignment",
+      "label": "owns"
+    },
+    {
+      "id": "r25",
+      "from_element": "growth_goal",
+      "to_element": "customer_satisfaction_goal",
+      "relationship_type": "Influence",
+      "label": "influences"
+    },
+    {
+      "id": "r26",
+      "from_element": "customer_satisfaction_goal",
+      "to_element": "online_presence_requirement",
+      "relationship_type": "Realization",
+      "label": "requires"
+    },
+    {
+      "id": "r27",
+      "from_element": "online_presence_requirement",
+      "to_element": "ecommerce_capability",
+      "relationship_type": "Realization",
+      "label": "requires"
+    },
+    {
+      "id": "r28",
+      "from_element": "ecommerce_capability",
+      "to_element": "ecommerce_platform",
+      "relationship_type": "Realization",
+      "label": "realized by"
+    },
+    {
+      "id": "r29",
+      "from_element": "delivery_capability",
+      "to_element": "delivery_process",
+      "relationship_type": "Realization",
+      "label": "realized by"
+    },
+    {
+      "id": "r30",
+      "from_element": "digital_transformation",
+      "to_element": "ecommerce_platform",
+      "relationship_type": "Realization",
+      "label": "implements"
+    }
+  ],
+  "layout": {
+    "direction": "top-bottom",
+    "spacing": "normal",
+    "show_legend": "true",
+    "show_title": "true",
+    "group_by_layer": "true",
+    "show_element_types": "false",
+    "show_relationship_labels": "true"
+  }
+}

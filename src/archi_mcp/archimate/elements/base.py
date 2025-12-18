@@ -1,8 +1,21 @@
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18T11:40:52
+# Last Updated: 2025-12-18T11:40:52
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
+
 """Base ArchiMate element definition."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional, Set, Union
+from pydantic import BaseModel, Field, Field
 
 
 class ArchiMateLayer(str, Enum):
@@ -15,6 +28,192 @@ class ArchiMateLayer(str, Enum):
     STRATEGY = "Strategy"
     IMPLEMENTATION = "Implementation"
 
+    @classmethod
+    def get_core_layers(cls) -> Set['ArchiMateLayer']:
+        """Get the three core operational layers."""
+        return {cls.BUSINESS, cls.APPLICATION, cls.TECHNOLOGY}
+
+    @classmethod
+    def get_governance_layers(cls) -> Set['ArchiMateLayer']:
+        """Get the governance layers."""
+        return {cls.MOTIVATION, cls.STRATEGY}
+
+    @classmethod
+    def get_realization_layers(cls) -> Set['ArchiMateLayer']:
+        """Get the realization layers."""
+        return {cls.IMPLEMENTATION, cls.PHYSICAL}
+
+    def get_layer_description(self) -> str:
+        """Get a human-readable description of this layer."""
+        descriptions = {
+            ArchiMateLayer.BUSINESS: "Business operations and processes",
+            ArchiMateLayer.APPLICATION: "Application services and components",
+            ArchiMateLayer.TECHNOLOGY: "Technology infrastructure and platforms",
+            ArchiMateLayer.PHYSICAL: "Physical infrastructure and facilities",
+            ArchiMateLayer.MOTIVATION: "Motivational drivers and requirements",
+            ArchiMateLayer.STRATEGY: "Strategic capabilities and resources",
+            ArchiMateLayer.IMPLEMENTATION: "Implementation projects and deliverables"
+        }
+        return descriptions.get(self, "Layer")
+
+    def get_layer_color(self) -> str:
+        """Get the default PlantUML color for this layer."""
+        colors = {
+            ArchiMateLayer.BUSINESS: "Business",
+            ArchiMateLayer.APPLICATION: "Application",
+            ArchiMateLayer.TECHNOLOGY: "Technology",
+            ArchiMateLayer.PHYSICAL: "Physical",
+            ArchiMateLayer.MOTIVATION: "Motivation",
+            ArchiMateLayer.STRATEGY: "Strategy",
+            ArchiMateLayer.IMPLEMENTATION: "Implementation",
+        }
+        return colors.get(self, "Technology")
+
+    def is_core_layer(self) -> bool:
+        """Check if this is a core operational layer."""
+        return self in self.get_core_layers()
+
+    def is_governance_layer(self) -> bool:
+        """Check if this is a governance layer."""
+        return self in self.get_governance_layers()
+
+    def is_realization_layer(self) -> bool:
+        """Check if this is a realization layer."""
+        return self in self.get_realization_layers()
+
+
+class ComponentGroupingStyle(str, Enum):
+    """Component grouping styles for PlantUML."""
+    PACKAGE = "package"
+    NODE = "node"
+    FOLDER = "folder"
+    FRAME = "frame"
+    CLOUD = "cloud"
+    DATABASE = "database"
+    RECTANGLE = "rectangle"
+
+
+class ArchiMateGroup(BaseModel):
+    """Named group container for ArchiMate elements."""
+
+    id: str = Field(..., description="Unique identifier for the group")
+    name: str = Field(..., description="Display name of the group")
+    group_type: ComponentGroupingStyle = Field(..., description="Type of grouping construct (package, node, etc.)")
+    parent_group_id: Optional[str] = Field(None, description="ID of parent group for nested groups")
+    element_ids: List[str] = Field(default_factory=list, description="IDs of elements belonging to this group")
+    description: Optional[str] = Field(None, description="Group description")
+    properties: Dict[str, Any] = Field(default_factory=dict, description="Additional properties")
+
+    def to_plantuml(self, indent: int = 0) -> str:
+        """Generate PlantUML code for this group.
+
+        Args:
+            indent: Number of spaces to indent the group
+
+        Returns:
+            PlantUML code string
+        """
+        indent_str = "  " * indent
+        lines = []
+
+        # Generate group start
+        safe_name = self.name.encode('utf-8').decode('utf-8')
+        if self.group_type == ComponentGroupingStyle.PACKAGE:
+            lines.append(f"{indent_str}package \"{safe_name}\" {{")
+        elif self.group_type == ComponentGroupingStyle.NODE:
+            lines.append(f"{indent_str}node \"{safe_name}\" {{")
+        elif self.group_type == ComponentGroupingStyle.FOLDER:
+            lines.append(f"{indent_str}folder \"{safe_name}\" {{")
+        elif self.group_type == ComponentGroupingStyle.FRAME:
+            lines.append(f"{indent_str}frame \"{safe_name}\" {{")
+        elif self.group_type == ComponentGroupingStyle.CLOUD:
+            lines.append(f"{indent_str}cloud \"{safe_name}\" {{")
+        elif self.group_type == ComponentGroupingStyle.DATABASE:
+            lines.append(f"{indent_str}database \"{safe_name}\" {{")
+        elif self.group_type == ComponentGroupingStyle.RECTANGLE:
+            lines.append(f"{indent_str}rectangle \"{safe_name}\" {{")
+        else:
+            lines.append(f"{indent_str}package \"{safe_name}\" {{")  # Default fallback
+
+        # Add description as comment if present
+        if self.description:
+            lines.append(f"{indent_str}  ' {self.description}")
+
+        return "\n".join(lines)
+
+    def to_plantuml_end(self, indent: int = 0) -> str:
+        """Generate PlantUML closing brace for this group.
+
+        Args:
+            indent: Number of spaces to indent the closing brace
+
+        Returns:
+            PlantUML closing brace
+        """
+        indent_str = "  " * indent
+        return f"{indent_str}}}"
+
+
+class PortDirection(str, Enum):
+    """Port direction for component interfaces."""
+    INPUT = "portin"
+    OUTPUT = "portout"
+    BIDIRECTIONAL = "port"
+
+
+class NotePosition(str, Enum):
+    """Note position relative to elements."""
+    TOP = "top"
+    BOTTOM = "bottom"
+    LEFT = "left"
+    RIGHT = "right"
+
+
+class ElementNote(BaseModel):
+    """Note attached to an element."""
+    content: str = Field(..., description="Note content")
+    position: NotePosition = Field(NotePosition.RIGHT, description="Note position")
+    is_floating: bool = Field(False, description="Whether note is floating (not attached to element)")
+    background_color: Optional[str] = Field(None, description="Note background color")
+    border_color: Optional[str] = Field(None, description="Note border color")
+
+
+class ComponentPort(BaseModel):
+    """Port definition for component interfaces."""
+    id: str = Field(..., description="Unique port identifier")
+    name: str = Field(..., description="Port name")
+    direction: PortDirection = Field(PortDirection.BIDIRECTIONAL, description="Port direction")
+    interface_type: Optional[str] = Field(None, description="Interface type or protocol")
+    description: Optional[str] = Field(None, description="Port description")
+
+
+
+
+class ComponentInterface(BaseModel):
+    """Interface definition for components."""
+    id: str = Field(..., description="Unique interface identifier")
+    name: str = Field(..., description="Interface display name")
+    interface_type: str = Field("()", description="PlantUML interface symbol")
+    description: Optional[str] = Field(None, description="Interface description")
+    ports: List[ComponentPort] = Field(default_factory=list, description="Associated ports")
+
+
+class PlantUMLSprite(BaseModel):
+    """PlantUML sprite definition for use in stereotypes."""
+    name: str = Field(..., description="Sprite name (starts with $)")
+    width: int = Field(16, description="Sprite width in pixels")
+    height: int = Field(16, description="Sprite height in pixels")
+    scale: int = Field(16, description="Sprite scale factor")
+    data: List[str] = Field(..., description="Hex data lines defining the sprite")
+
+    def to_plantuml(self) -> str:
+        """Generate PlantUML sprite definition."""
+        lines = []
+        lines.append(f"sprite {self.name} [{self.width}x{self.height}/{self.scale}] {{")
+        lines.extend(self.data)
+        lines.append("}")
+        return "\n".join(lines)
+
 
 class ArchiMateAspect(str, Enum):
     """ArchiMate aspects according to ArchiMate 3.2 specification."""
@@ -22,70 +221,254 @@ class ArchiMateAspect(str, Enum):
     PASSIVE_STRUCTURE = "Passive Structure"
     BEHAVIOR = "Behavior"
 
+    def get_aspect_description(self) -> str:
+        """Get a human-readable description of this aspect."""
+        descriptions = {
+            self.ACTIVE_STRUCTURE: "Elements that exhibit behavior and have agency",
+            self.PASSIVE_STRUCTURE: "Elements that represent knowledge or data",
+            self.BEHAVIOR: "Elements that represent behavior and processes"
+        }
+        return descriptions.get(self, "Aspect")
+
+    def is_structure_aspect(self) -> bool:
+        """Check if this is a structural aspect."""
+        return self in {self.ACTIVE_STRUCTURE, self.PASSIVE_STRUCTURE}
+
 
 class ArchiMateElement(BaseModel):
     """Base class for all ArchiMate elements."""
-    
+
     id: str = Field(..., description="Unique identifier for the element")
     name: str = Field(..., description="Display name of the element")
     element_type: str = Field(..., description="ArchiMate element type")
     layer: ArchiMateLayer = Field(..., description="ArchiMate layer")
     aspect: ArchiMateAspect = Field(..., description="ArchiMate aspect")
     description: Optional[str] = Field(None, description="Element description")
-    stereotype: Optional[str] = Field(None, description="Element stereotype")
+    long_description: Optional[str] = Field(None, description="Multi-line description in brackets [long description here]")
+    stereotype: Optional[str] = Field(None, description="Element stereotype (supports sprites with $sprite_name)")
+    sprites: List[PlantUMLSprite] = Field(default_factory=list, description="Custom PlantUML sprites for this element")
+    tags: List[str] = Field(default_factory=list, description="Tags for hide/remove operations (e.g., $tag1, $tag2)")
+    group_id: Optional[str] = Field(None, description="ID of the group this element belongs to")
     properties: Dict[str, Any] = Field(default_factory=dict, description="Additional properties")
     documentation: Optional[str] = Field(None, description="Element documentation")
+
+    # Component diagram features
+    grouping_style: Optional[ComponentGroupingStyle] = Field(None, description="Grouping style for this element")
+    notes: List[ElementNote] = Field(default_factory=list, description="Notes attached to this element")
+    interfaces: List[ComponentInterface] = Field(default_factory=list, description="Component interfaces")
+    ports: List[ComponentPort] = Field(default_factory=list, description="Component ports")
+    color: Optional[str] = Field(None, description="Custom color for this element")
+    show_as_component: bool = Field(False, description="Render as PlantUML component instead of ArchiMate element")
     
-    def to_plantuml(self, show_element_type: bool = False) -> str:
+    def to_plantuml(self, show_element_type: bool = False, show_documentation: bool = False) -> str:
         """Generate PlantUML code for this element.
-        
+
         Args:
             show_element_type: Whether to display element type name in diagram
-        
+
         Returns:
             PlantUML code string
         """
+        lines = []
+
+        # Handle grouping styles
+        if self.grouping_style:
+            lines.extend(self._generate_grouping_start())
+
+        # Determine if we should render as component (either explicitly set or has ports/interfaces)
+        render_as_component = self.show_as_component or bool(self.ports or self.interfaces)
+
+        # Generate main element
+        if render_as_component:
+            # Check if we need braces (when there are ports or interfaces)
+            has_ports_or_interfaces = bool(self.ports or self.interfaces)
+            if has_ports_or_interfaces:
+                # Generate component with opening brace
+                component_line = self._generate_as_component(show_element_type)
+                lines.append(component_line.rstrip() + " {")
+                # Add interfaces and ports indented
+                for interface in self.interfaces:
+                    lines.append("  " + self._generate_interface(interface))
+                for port in self.ports:
+                    lines.append("  " + self._generate_port(port))
+                lines.append("}")
+            else:
+                lines.append(self._generate_as_component(show_element_type))
+        else:
+            lines.append(self._generate_as_archimate_element(show_element_type))
+
+        # Add notes
+        for note in self.notes:
+            lines.append(self._generate_note(note))
+
+        # Add documentation as note if requested and present
+        if show_documentation and self.documentation and not self.notes:
+            doc_note = ElementNote(
+                content=self.documentation,
+                position=NotePosition.BOTTOM,
+                is_floating=False
+            )
+            lines.append(self._generate_note(doc_note))
+
+        # Close grouping if started
+        if self.grouping_style:
+            lines.append(self._generate_grouping_end())
+
+        return "\n".join(lines)
+
+    def _generate_as_component(self, show_element_type: bool = False) -> str:
+        """Generate this element as a PlantUML component."""
+        safe_name = self.name.encode('utf-8').decode('utf-8')
+
+        # Build component declaration
+        component_parts = []
+
+        # Use long description if provided, otherwise use simple bracketed name
+        if self.long_description:
+            # Multi-line description format
+            component_parts.append(f"component {self.id} [\n{self.long_description}\n]")
+        else:
+            # For components with ports/interfaces, use simpler component syntax
+            if self.ports or self.interfaces:
+                component_parts.append(f"component {self.id}")
+                if self.color:
+                    component_parts.append(f"#{self.color}")
+            else:
+                # Standard component format
+                if self.color:
+                    component_parts.append(f"[{safe_name}] #{self.color}")
+                else:
+                    component_parts.append(f"[{safe_name}]")
+
+                if self.stereotype:
+                    component_parts.append(f" <<{self.stereotype}>>")
+
+                # Add tags
+                if self.tags:
+                    component_parts.extend(self.tags)
+
+                # Add alias
+                component_parts.append(f" as {self.id}")
+
+        return " ".join(component_parts) if not self.long_description else component_parts[0]
+
+    def _generate_as_archimate_element(self, show_element_type: bool = False) -> str:
+        """Generate this element as an ArchiMate element."""
         # Get color based on layer
         color = self._get_layer_color()
-        
+
         # Build stereotype if present
         stereotype_str = ""
         if self.stereotype:
             stereotype_str = f" <<{self.stereotype}>>"
-        
+
         # Use local normalization for PlantUML element types
         plantuml_element_type = self._normalize_for_plantuml(self.element_type, self.layer.value)
-        
+
         # Generate PlantUML archimate element
         # Ensure proper UTF-8 encoding for names with diacritics
         safe_name = self.name.encode('utf-8').decode('utf-8')
-        
+
         # Add element type to name if requested
         if show_element_type:
             display_name = f"{safe_name}\\n<<{self.element_type}>>"
         else:
             display_name = safe_name
-        
+
         plantuml_code = f'{plantuml_element_type}({self.id}, "{display_name}"{stereotype_str})'
-        
+
         return plantuml_code
+
+    def _generate_grouping_start(self) -> List[str]:
+        """Generate grouping start syntax."""
+        if not self.grouping_style:
+            return []
+
+        safe_name = self.name.encode('utf-8').decode('utf-8')
+
+        if self.grouping_style == ComponentGroupingStyle.PACKAGE:
+            return [f"package \"{safe_name}\" {{"]
+        elif self.grouping_style == ComponentGroupingStyle.NODE:
+            return [f"node \"{safe_name}\" {{"]
+        elif self.grouping_style == ComponentGroupingStyle.FOLDER:
+            return [f"folder \"{safe_name}\" {{"]
+        elif self.grouping_style == ComponentGroupingStyle.FRAME:
+            return [f"frame \"{safe_name}\" {{"]
+        elif self.grouping_style == ComponentGroupingStyle.CLOUD:
+            return [f"cloud \"{safe_name}\" {{"]
+        elif self.grouping_style == ComponentGroupingStyle.DATABASE:
+            return [f"database \"{safe_name}\" {{"]
+        elif self.grouping_style == ComponentGroupingStyle.RECTANGLE:
+            return [f"rectangle \"{safe_name}\" {{"]
+        else:
+            return []
+
+    def _generate_grouping_end(self) -> str:
+        """Generate grouping end syntax."""
+        return "}"
+
+    def _generate_interface(self, interface: ComponentInterface) -> str:
+        """Generate PlantUML interface code."""
+        safe_name = interface.name.encode('utf-8').decode('utf-8')
+        return f'{interface.interface_type} "{safe_name}" as {interface.id}'
+
+    def _generate_port(self, port: ComponentPort) -> str:
+        """Generate PlantUML port code."""
+        safe_name = port.name.encode('utf-8').decode('utf-8')
+
+        # Add interface type if specified
+        interface_part = ""
+        if port.interface_type:
+            interface_part = f" ({port.interface_type})"
+
+        # Add description if specified
+        desc_part = ""
+        if port.description:
+            desc_part = f"\\n{port.description}"
+
+        return f'{port.direction.value} {port.id} [[{safe_name}{interface_part}{desc_part}]]'
+
+    def _generate_note(self, note: ElementNote) -> str:
+        """Generate PlantUML note code."""
+        content_lines = note.content.split('\n')
+
+        # Add color styling if specified
+        color_style = ""
+        if note.background_color or note.border_color:
+            color_parts = []
+            if note.background_color:
+                color_parts.append(f"#{note.background_color}")
+            if note.border_color:
+                color_parts.append(f"line:{note.border_color}")
+            if color_parts:
+                color_style = f" {','.join(color_parts)}"
+
+        if len(content_lines) == 1:
+            # Single line note
+            if note.is_floating:
+                return f"note{color_style} as {self.id}_note\n{note.content}\nend note"
+            else:
+                return f"note{color_style} {note.position.value} of {self.id}: {note.content}"
+        else:
+            # Multi-line note
+            if note.is_floating:
+                lines = [f"note{color_style} as {self.id}_note"]
+                lines.extend(content_lines)
+                lines.append("end note")
+                return "\n".join(lines)
+            else:
+                lines = [f"note{color_style} {note.position.value} of {self.id}"]
+                lines.extend(content_lines)
+                lines.append("end note")
+                return "\n".join(lines)
     
     def _get_layer_color(self) -> str:
         """Get the default color for this layer.
-        
+
         Returns:
             Color string for PlantUML
         """
-        layer_colors = {
-            ArchiMateLayer.BUSINESS: "Business",
-            ArchiMateLayer.APPLICATION: "Application", 
-            ArchiMateLayer.TECHNOLOGY: "Technology",
-            ArchiMateLayer.PHYSICAL: "Physical",
-            ArchiMateLayer.MOTIVATION: "Motivation",
-            ArchiMateLayer.STRATEGY: "Strategy",
-            ArchiMateLayer.IMPLEMENTATION: "Implementation",
-        }
-        return layer_colors.get(self.layer, "Technology")
+        return self.layer.get_layer_color()
     
     def _normalize_element_type(self, element_type: str) -> str:
         """Normalize element type for PlantUML compatibility.

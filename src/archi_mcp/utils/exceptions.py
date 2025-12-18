@@ -1,3 +1,16 @@
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18T11:40:25
+# Last Updated: 2025-12-18T11:40:25
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
+
 """Custom exceptions for ArchiMate MCP server."""
 
 from typing import Any, Dict, Optional
@@ -44,14 +57,10 @@ class ArchiMateRelationshipError(ArchiMateError):
         self.relationship_type = relationship_type
 
 
-class ArchiMateGenerationError(ArchiMateError):
-    """Exception raised when PlantUML code generation fails."""
-    pass
-
 
 class ArchiMateTemplateError(ArchiMateError):
     """Exception raised when template processing fails."""
-    
+
     def __init__(
         self,
         message: str,
@@ -62,3 +71,18 @@ class ArchiMateTemplateError(ArchiMateError):
         super().__init__(message, details)
         self.template_name = template_name
         self.template_type = template_type
+
+
+class ArchiMateGenerationError(ArchiMateError):
+    """Exception raised when ArchiMate diagram generation fails."""
+
+    def __init__(
+        self,
+        message: str,
+        diagram_elements: Optional[int] = None,
+        diagram_relationships: Optional[int] = None,
+        details: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        super().__init__(message, details)
+        self.diagram_elements = diagram_elements
+        self.diagram_relationships = diagram_relationships

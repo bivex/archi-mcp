@@ -1,3 +1,16 @@
+# Copyright (c) 2025 Bivex
+#
+# Author: Bivex
+# Available for contact via email: support@b-b.top
+# For up-to-date contact information:
+# https://github.com/bivex
+#
+# Created: 2025-12-18 11:23
+# Last Updated: 2025-12-18 11:23
+#
+# Licensed under the MIT License.
+# Commercial licensing available upon request.
+
 """
 XML Schema and ArchiMate Relationship Validator
 
@@ -44,28 +57,51 @@ class ValidationResult:
     def get_summary(self) -> str:
         """Get validation summary."""
         lines = []
-        
-        if self.is_valid:
-            lines.append("✅ VALIDATION PASSED")
-        else:
-            lines.append("❌ VALIDATION FAILED")
-            
-        if self.errors:
-            lines.append(f"\n🚨 Errors ({len(self.errors)}):")
-            for error in self.errors:
-                lines.append(f"  - {error}")
-                
-        if self.warnings:
-            lines.append(f"\n⚠️  Warnings ({len(self.warnings)}):")
-            for warning in self.warnings:
-                lines.append(f"  - {warning}")
-                
-        if self.suggestions:
-            lines.append(f"\n💡 Suggestions ({len(self.suggestions)}):")
-            for suggestion in self.suggestions:
-                lines.append(f"  - {suggestion}")
-                
+
+        lines.append(_get_validation_status(self.is_valid))
+        lines.extend(_get_error_summary(self.errors))
+        lines.extend(_get_warning_summary(self.warnings))
+        lines.extend(_get_suggestion_summary(self.suggestions))
+
         return "\n".join(lines)
+
+
+def _get_validation_status(is_valid: bool) -> str:
+    """Get validation status line."""
+    if is_valid:
+        return "✅ VALIDATION PASSED"
+    else:
+        return "❌ VALIDATION FAILED"
+
+
+def _get_error_summary(errors: List[str]) -> List[str]:
+    """Get error summary section."""
+    lines = []
+    if errors:
+        lines.append(f"\n🚨 Errors ({len(errors)}):")
+        for error in errors:
+            lines.append(f"  - {error}")
+    return lines
+
+
+def _get_warning_summary(warnings: List[str]) -> List[str]:
+    """Get warning summary section."""
+    lines = []
+    if warnings:
+        lines.append(f"\n⚠️  Warnings ({len(warnings)}):")
+        for warning in warnings:
+            lines.append(f"  - {warning}")
+    return lines
+
+
+def _get_suggestion_summary(suggestions: List[str]) -> List[str]:
+    """Get suggestion summary section."""
+    lines = []
+    if suggestions:
+        lines.append(f"\n💡 Suggestions ({len(suggestions)}):")
+        for suggestion in suggestions:
+            lines.append(f"  - {suggestion}")
+    return lines
 
 class ArchiMateXMLValidator:
     """
@@ -252,6 +288,37 @@ class ArchiMateXMLValidator:
         except Exception as e:
             result.add_warning(f"xmllint validation error: {str(e)}")
 
+    def validate_xml_string(self, xml_content: str) -> List[str]:
+        """
+        Validate XML string and return list of errors.
+
+        Args:
+            xml_content: XML content to validate
+
+        Returns:
+            List of validation error messages
+        """
+        result = self.validate_xml_content(xml_content)
+        return result.errors + result.warnings
+
+    def get_validation_summary(self, errors: List[str]) -> Dict:
+        """
+        Generate validation summary from error list.
+
+        Args:
+            errors: List of validation errors
+
+        Returns:
+            Dictionary with validation summary
+        """
+        return {
+            'is_valid': len(errors) == 0,
+            'error_count': len(errors),
+            'errors': errors,
+            'validator': 'ArchiMateXMLValidator'
+        }
+
+
 # Environment-controlled validation
 def is_validation_enabled() -> bool:
     """Check if validation is enabled via environment variable."""
@@ -276,22 +343,38 @@ def validate_archimate_export(xml_file_path: str) -> Optional[ValidationResult]:
 
 def log_validation_results(result: ValidationResult, logger_instance: logging.Logger = None):
     """Log validation results."""
-    if logger_instance is None:
-        logger_instance = logger
-        
+    logger_instance = logger_instance or logger
+
+    _log_validation_status(result, logger_instance)
+    _log_validation_errors(result, logger_instance)
+    _log_validation_warnings(result, logger_instance)
+    _log_validation_suggestions(result, logger_instance)
+
+
+def _log_validation_status(result: ValidationResult, logger_instance: logging.Logger):
+    """Log overall validation status."""
     if result.is_valid:
         logger_instance.info("XML validation passed")
     else:
         logger_instance.warning("XML validation found issues")
-        
+
+
+def _log_validation_errors(result: ValidationResult, logger_instance: logging.Logger):
+    """Log validation errors."""
     if result.errors:
         for error in result.errors:
             logger_instance.error(f"Validation error: {error}")
-            
+
+
+def _log_validation_warnings(result: ValidationResult, logger_instance: logging.Logger):
+    """Log validation warnings."""
     if result.warnings:
         for warning in result.warnings:
             logger_instance.warning(f"Validation warning: {warning}")
-            
+
+
+def _log_validation_suggestions(result: ValidationResult, logger_instance: logging.Logger):
+    """Log validation suggestions."""
     if result.suggestions:
         for suggestion in result.suggestions:
             logger_instance.info(f"Validation suggestion: {suggestion}")
