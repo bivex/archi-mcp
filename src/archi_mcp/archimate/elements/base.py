@@ -253,21 +253,27 @@ class ArchiMateElement(BaseModel):
             # Multi-line description format
             component_parts.append(f"component {self.id} [\n{self.long_description}\n]")
         else:
-            # Standard component format
-            if self.color:
-                component_parts.append(f"[{safe_name}] #{self.color}")
+            # For components with ports/interfaces, use simpler component syntax
+            if self.ports or self.interfaces:
+                component_parts.append(f"component {self.id}")
+                if self.color:
+                    component_parts.append(f"#{self.color}")
             else:
-                component_parts.append(f"[{safe_name}]")
+                # Standard component format
+                if self.color:
+                    component_parts.append(f"[{safe_name}] #{self.color}")
+                else:
+                    component_parts.append(f"[{safe_name}]")
 
-            if self.stereotype:
-                component_parts.append(f" <<{self.stereotype}>>")
+                if self.stereotype:
+                    component_parts.append(f" <<{self.stereotype}>>")
 
-            # Add tags
-            if self.tags:
-                component_parts.extend(self.tags)
+                # Add tags
+                if self.tags:
+                    component_parts.extend(self.tags)
 
-            # Add alias
-            component_parts.append(f" as {self.id}")
+                # Add alias
+                component_parts.append(f" as {self.id}")
 
         return " ".join(component_parts) if not self.long_description else component_parts[0]
 
