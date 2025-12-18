@@ -92,6 +92,35 @@ class PlantUMLSkinParams:
             params.append("  shadowing true")
         params.append("}")
 
+        # Advanced component styling options - component_style is handled in generator
+
+        # Stereotype-specific component styling (for sprite stereotypes)
+        for layer, color in styling.colors.layer_colors.items():
+            params.append(f"skinparam component<<{layer}>> {{")
+            params.append(f"  backgroundColor {color}")
+            params.append(f"  borderColor {color}DD")
+            params.append("}")
+
+        # Additional advanced styling options
+        if styling.show_borders:
+            params.append("skinparam componentBorderThickness 2")
+        else:
+            params.append("skinparam componentBorderThickness 0")
+
+        # Note styling
+        params.append("skinparam note {")
+        params.append(f"  backgroundColor {styling.colors.secondary}10")
+        params.append(f"  borderColor {styling.colors.secondary}")
+        params.append(f"  fontColor {styling.colors.text}")
+        params.append("}")
+
+        # Legend styling
+        params.append("skinparam legend {")
+        params.append(f"  backgroundColor {styling.colors.background}")
+        params.append(f"  borderColor {styling.colors.border}")
+        params.append(f"  fontColor {styling.colors.text}")
+        params.append("}")
+
         # Interface styling
         params.append("skinparam interface {")
         params.append(f"  backgroundColor {styling.colors.accent}")

@@ -124,6 +124,23 @@ class ComponentInterface(BaseModel):
     ports: List[ComponentPort] = Field(default_factory=list, description="Associated ports")
 
 
+class PlantUMLSprite(BaseModel):
+    """PlantUML sprite definition for use in stereotypes."""
+    name: str = Field(..., description="Sprite name (starts with $)")
+    width: int = Field(16, description="Sprite width in pixels")
+    height: int = Field(16, description="Sprite height in pixels")
+    scale: int = Field(16, description="Sprite scale factor")
+    data: List[str] = Field(..., description="Hex data lines defining the sprite")
+
+    def to_plantuml(self) -> str:
+        """Generate PlantUML sprite definition."""
+        lines = []
+        lines.append(f"sprite {self.name} [{self.width}x{self.height}/{self.scale}] {{")
+        lines.extend(self.data)
+        lines.append("}")
+        return "\n".join(lines)
+
+
 class ArchiMateAspect(str, Enum):
     """ArchiMate aspects according to ArchiMate 3.2 specification."""
     ACTIVE_STRUCTURE = "Active Structure"
@@ -153,7 +170,10 @@ class ArchiMateElement(BaseModel):
     layer: ArchiMateLayer = Field(..., description="ArchiMate layer")
     aspect: ArchiMateAspect = Field(..., description="ArchiMate aspect")
     description: Optional[str] = Field(None, description="Element description")
-    stereotype: Optional[str] = Field(None, description="Element stereotype")
+    long_description: Optional[str] = Field(None, description="Multi-line description in brackets [long description here]")
+    stereotype: Optional[str] = Field(None, description="Element stereotype (supports sprites with $sprite_name)")
+    sprites: List[PlantUMLSprite] = Field(default_factory=list, description="Custom PlantUML sprites for this element")
+    tags: List[str] = Field(default_factory=list, description="Tags for hide/remove operations (e.g., $tag1, $tag2)")
     properties: Dict[str, Any] = Field(default_factory=dict, description="Additional properties")
     documentation: Optional[str] = Field(None, description="Element documentation")
 
@@ -220,18 +240,28 @@ class ArchiMateElement(BaseModel):
         # Build component declaration
         component_parts = []
 
-        if self.color:
-            component_parts.append(f"[{safe_name}] #{self.color}")
+        # Use long description if provided, otherwise use simple bracketed name
+        if self.long_description:
+            # Multi-line description format
+            component_parts.append(f"component {self.id} [\n{self.long_description}\n]")
         else:
-            component_parts.append(f"[{safe_name}]")
+            # Standard component format
+            if self.color:
+                component_parts.append(f"[{safe_name}] #{self.color}")
+            else:
+                component_parts.append(f"[{safe_name}]")
 
-        if self.stereotype:
-            component_parts.append(f" <<{self.stereotype}>>")
+            if self.stereotype:
+                component_parts.append(f" <<{self.stereotype}>>")
 
-        # Add alias
-        component_parts.append(f" as {self.id}")
+            # Add tags
+            if self.tags:
+                component_parts.extend(self.tags)
 
-        return "".join(component_parts)
+            # Add alias
+            component_parts.append(f" as {self.id}")
+
+        return " ".join(component_parts) if not self.long_description else component_parts[0]
 
     def _generate_as_archimate_element(self, show_element_type: bool = False) -> str:
         """Generate this element as an ArchiMate element."""

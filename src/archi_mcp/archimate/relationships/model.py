@@ -10,10 +10,14 @@ from .types import ArchiMateRelationshipType
 
 class RelationshipDirection(str, Enum):
     """Relationship direction modifiers for PlantUML."""
-    UP = "Up"
-    DOWN = "Down"
-    LEFT = "Left"
-    RIGHT = "Right"
+    UP = "up"
+    DOWN = "down"
+    LEFT = "left"
+    RIGHT = "right"
+    UP_LEFT = "up-left"
+    UP_RIGHT = "up-right"
+    DOWN_LEFT = "down-left"
+    DOWN_RIGHT = "down-right"
 
 
 class ArrowStyle(str, Enum):
@@ -68,6 +72,8 @@ class ArchiMateRelationship(BaseModel):
     color: Optional[str] = Field(None, description="Custom color for this relationship")
     description: Optional[str] = Field(None, description="Relationship description")
     label: Optional[str] = Field(None, description="Relationship label")
+    length: Optional[int] = Field(None, description="Arrow length modifier (1-5)")
+    positioning: Optional[str] = Field(None, description="Advanced positioning hints (e.g., 'hidden' for invisible layout relationships)")
     properties: dict = Field(default_factory=dict, description="Additional properties")
 
     def get_default_arrow_style(self) -> ArrowStyle:
@@ -106,15 +112,40 @@ class ArchiMateRelationship(BaseModel):
         # Handle direction modifications
         final_arrow = arrow_style.value
         if self.direction:
-            # Apply directional hints
-            if self.direction == RelationshipDirection.UP:
-                final_arrow = final_arrow.replace("-->", "-up->").replace("..>", "-up.>").replace("<--", "<-up-")
-            elif self.direction == RelationshipDirection.DOWN:
-                final_arrow = final_arrow.replace("-->", "-down->").replace("..>", "-down.>").replace("<--", "<-down-")
-            elif self.direction == RelationshipDirection.LEFT:
-                final_arrow = final_arrow.replace("-->", "-left->").replace("..>", "-left.>").replace("<--", "<-left-")
-            elif self.direction == RelationshipDirection.RIGHT:
-                final_arrow = final_arrow.replace("-->", "-right->").replace("..>", "-right.>").replace("<--", "<-right-")
+            # Apply directional hints with comprehensive PlantUML syntax support
+            direction_map = {
+                RelationshipDirection.UP: "up",
+                RelationshipDirection.DOWN: "down",
+                RelationshipDirection.LEFT: "left",
+                RelationshipDirection.RIGHT: "right",
+                RelationshipDirection.UP_LEFT: "up-left",
+                RelationshipDirection.UP_RIGHT: "up-right",
+                RelationshipDirection.DOWN_LEFT: "down-left",
+                RelationshipDirection.DOWN_RIGHT: "down-right"
+            }
+
+            direction = direction_map.get(self.direction)
+            if direction:
+                # Handle different arrow styles comprehensively
+                final_arrow = final_arrow.replace("-->", f"-{direction}->")
+                final_arrow = final_arrow.replace("..>", f"-{direction}.>")
+                final_arrow = final_arrow.replace("<--", f"<{direction}-")
+                final_arrow = final_arrow.replace("<..", f"<{direction}.")
+                final_arrow = final_arrow.replace("<-->", f"<{direction}-{direction}>")
+                final_arrow = final_arrow.replace("*-->", f"*-{direction}->")
+                final_arrow = final_arrow.replace("o-->", f"o-{direction}->")
+                final_arrow = final_arrow.replace("--*", f"-{direction}-*")
+                final_arrow = final_arrow.replace("*--", f"*-{direction}-")
+                final_arrow = final_arrow.replace("--(", f"-{direction}-(")
+                final_arrow = final_arrow.replace(")--", f")-{direction}-")
+                final_arrow = final_arrow.replace("-->>", f"-{direction}->>")
+                final_arrow = final_arrow.replace("<<--", f"<<{direction}-")
+                final_arrow = final_arrow.replace("<<-->>", f"<<{direction}-{direction}>>")
+                final_arrow = final_arrow.replace("..>>", f".{direction}.>>")
+                final_arrow = final_arrow.replace("~>", f"~{direction}>")
+                final_arrow = final_arrow.replace("->>", f"-{direction}>>")
+                final_arrow = final_arrow.replace("--|>", f"-{direction}-|>")
+                final_arrow = final_arrow.replace("..|>", f".{direction}.|>")
 
         # Determine relationship label
         label = ""
@@ -131,9 +162,23 @@ class ArchiMateRelationship(BaseModel):
         if self.color:
             color_str = f" #{self.color}"
 
+        # Add length modifier if specified
+        length_str = ""
+        if self.length and 1 <= self.length <= 5:
+            length_str = str(self.length)
+
+        # Handle positioning options
+        positioning_prefix = ""
+        positioning_suffix = ""
+        if self.positioning == "hidden":
+            positioning_prefix = "hidden "
+        elif self.positioning:
+            # Other positioning hints can be added here
+            pass
+
         if use_arrow_styles:
             # New format with arrow styles
-            plantuml_code = f'"{self.from_element}" {final_arrow} "{self.to_element}"{color_str}{label}'
+            plantuml_code = f'{positioning_prefix}"{self.from_element}" {final_arrow}{length_str} "{self.to_element}"{color_str}{label}{positioning_suffix}'
         else:
             # Legacy format for backward compatibility
             rel_type = self.relationship_type.value
@@ -151,7 +196,7 @@ class ArchiMateRelationship(BaseModel):
             else:
                 legacy_label = '""'
 
-            plantuml_code = f'Rel_{rel_type}({self.from_element}, {self.to_element}, {legacy_label})'
+            plantuml_code = f'{positioning_prefix}Rel_{rel_type}({self.from_element}, {self.to_element}, {legacy_label}){positioning_suffix}'
 
         return plantuml_code
 
@@ -295,7 +340,7 @@ def create_relationship(
     direction_enum = None
     if direction:
         try:
-            direction_enum = RelationshipDirection(direction)
+            direction_enum = RelationshipDirection(direction.lower())
         except ValueError:
             valid_directions = [d.value for d in RelationshipDirection]
             raise ArchiMateRelationshipError(

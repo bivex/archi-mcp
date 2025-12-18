@@ -13,9 +13,10 @@ from src.archi_mcp.archimate.themes import DiagramTheme
 from src.archi_mcp.archimate.elements.base import (
     ArchiMateElement, ArchiMateLayer, ArchiMateAspect,
     ComponentGroupingStyle, PortDirection, NotePosition,
-    ComponentPort, ElementNote, ComponentInterface
+    ComponentPort, ElementNote, ComponentInterface, PlantUMLSprite
 )
 from src.archi_mcp.archimate.relationships.model import create_relationship
+from src.archi_mcp.archimate.generator import PlantUMLJSONObject
 
 
 def create_beautiful_ecommerce_diagram():
@@ -40,7 +41,7 @@ def create_beautiful_ecommerce_diagram():
     )
     generator.set_layout(layout)
 
-    # Create business layer with grouping and notes
+    # Create business layer with grouping, notes, and sprites
     customer = ArchiMateElement(
         id="customer",
         name="Online Customer",
@@ -49,6 +50,33 @@ def create_beautiful_ecommerce_diagram():
         aspect=ArchiMateAspect.ACTIVE_STRUCTURE,
         description="End customers purchasing products online",
         grouping_style=ComponentGroupingStyle.PACKAGE,
+        stereotype="$customer_sprite",
+        sprites=[
+            PlantUMLSprite(
+                name="$customer_sprite",
+                width=16,
+                height=16,
+                scale=16,
+                data=[
+                    "FFFFFFFFFFFFFFFF",
+                    "FFFFFFFFFFFFFFFF",
+                    "FFFFFFFFFFFFFFFF",
+                    "FFFFFFFFFF0FFFFF",
+                    "FFFFFFFFFF00FFFF",
+                    "FF00000000000FFF",
+                    "FF000000000000FF",
+                    "FF00000000000FFF",
+                    "FFFFFFFFFF00FFFF",
+                    "FFFFFFFFFF0FFFFF",
+                    "FFFFFFFFFFFFFFFF",
+                    "FFFFFFFFFFFFFFFF",
+                    "FFFFFFFFFFFFFFFF",
+                    "FFFFFFFFFFFFFFFF",
+                    "FFFFFFFFFFFFFFFF",
+                    "FFFFFFFFFFFFFFFF"
+                ]
+            )
+        ],
         notes=[
             ElementNote(
                 content="Primary revenue source\nHigh conversion focus",
@@ -124,16 +152,22 @@ def create_beautiful_ecommerce_diagram():
         color="#FF9800"
     )
 
-    # Create technology layer with cloud grouping
+    # Create technology layer with cloud grouping and long description
     web_server = ArchiMateElement(
         id="web_server",
         name="Web Server Cluster",
         element_type="Node",
         layer=ArchiMateLayer.TECHNOLOGY,
         aspect=ArchiMateAspect.ACTIVE_STRUCTURE,
-        description="Load-balanced web servers",
+        long_description="""Web Server Cluster
+Load-balanced infrastructure
+- Nginx front-end
+- Multiple application nodes
+- Auto-scaling enabled
+- High availability setup""",
         grouping_style=ComponentGroupingStyle.CLOUD,
-        color="#2196F3"
+        color="#2196F3",
+        tags=["$infrastructure", "$critical"]
     )
 
     database = ArchiMateElement(
@@ -174,6 +208,24 @@ def create_beautiful_ecommerce_diagram():
     for rel in relationships:
         generator.add_relationship(rel)
 
+    # Add JSON data for demonstration
+    generator.add_json_object(PlantUMLJSONObject(
+        name="system_metrics",
+        data={
+            "performance": {
+                "response_time": "150ms",
+                "throughput": "1000 req/s",
+                "availability": "99.9%"
+            },
+            "infrastructure": ["web_servers", "databases", "load_balancers"],
+            "version": "2.1.0"
+        }
+    ))
+
+    # Demonstrate hide/remove functionality (comment out to see all elements)
+    # generator.hide_tags(["$infrastructure"])  # Hide infrastructure-tagged elements
+    # generator.remove_elements(["database"])  # Remove database element
+
     # Generate the beautiful diagram
     plantuml_code = generator.generate_plantuml(
         title="Beautiful E-Commerce Architecture",
@@ -193,6 +245,12 @@ def create_beautiful_ecommerce_diagram():
     print("✓ Notes attached to elements")
     print("✓ Enhanced relationship styling")
     print("✓ Layer-based organization")
+    print("✓ Sprites in stereotypes (customer sprite)")
+    print("✓ JSON data display (system_metrics)")
+    print("✓ Long multi-line descriptions (web server)")
+    print("✓ Tag system for hide/remove operations")
+    print("✓ Advanced skinparam customization")
+    print("✓ Enhanced arrow direction control")
 
     return plantuml_code
 
