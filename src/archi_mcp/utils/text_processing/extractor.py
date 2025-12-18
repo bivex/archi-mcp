@@ -31,13 +31,14 @@ class TextExtractor:
         """
         all_text = []
 
-        all_text.extend(_extract_text_from_elements(diagram.elements))
-        all_text.extend(_extract_text_from_relationships(diagram.relationships))
-        all_text.extend(_extract_text_from_diagram_metadata(diagram))
+        all_text.extend(TextExtractor._extract_text_from_elements(diagram.elements))
+        all_text.extend(TextExtractor._extract_text_from_relationships(diagram.relationships))
+        all_text.extend(TextExtractor._extract_text_from_diagram_metadata(diagram))
 
         return all_text
 
 
+    @staticmethod
     def _extract_text_from_elements(elements) -> List[str]:
         """Extract text content from diagram elements."""
         text_content = []
@@ -48,7 +49,7 @@ class TextExtractor:
                 text_content.append(element.description.lower())
         return text_content
 
-
+    @staticmethod
     def _extract_text_from_relationships(relationships) -> List[str]:
         """Extract text content from diagram relationships."""
         text_content = []
@@ -59,7 +60,7 @@ class TextExtractor:
                 text_content.append(rel.description.lower())
         return text_content
 
-
+    @staticmethod
     def _extract_text_from_diagram_metadata(diagram) -> List[str]:
         """Extract text content from diagram title and description."""
         text_content = []

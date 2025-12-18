@@ -398,7 +398,7 @@ class ArchiMateXMLExporter:
             
             # Add elements to the view with intelligent positioning
             for i, element in enumerate(elements):
-                self._add_diagram_object(view, i, element, element_positions, connection_map, relationships, connection_id_map)
+                self._add_diagram_object(view, i, element, element_positions, connection_map, relationships, connection_id_map, elements)
             
             # Set viewpoint property
             viewpoint_prop = etree.SubElement(view, "property")
@@ -476,7 +476,7 @@ class ArchiMateXMLExporter:
             logger.warning(f"Universal relationship fixing failed (non-blocking): {e}")
         return xml_string
 
-    def _add_diagram_object(self, view_element, index, element, element_positions, connection_map, relationships, connection_id_map):
+    def _add_diagram_object(self, view_element, index, element, element_positions, connection_map, relationships, connection_id_map, elements):
         """Adds a DiagramObject element to the view."""
         child = etree.SubElement(view_element, "child")
         child.set(f"{{{self.XSI_NAMESPACE}}}type", "archimate:DiagramObject")

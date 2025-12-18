@@ -197,39 +197,78 @@ def analyze_model_relationships(xml_content: str) -> Dict[str, any]:
 def generate_liberal_validation_report(analysis: Dict[str, any]) -> str:
     """Generate a comprehensive but non-alarming validation report."""
     lines = ["🔍 ArchiMate Model Analysis Report", "=" * 50]
-    
-    # Summary
+
+    # Add summary section
+    lines.extend(_generate_summary_section(analysis))
+
+    # Add layer statistics section
+    lines.extend(_generate_layer_statistics_section(analysis))
+
+    # Add problematic relationships section
+    lines.extend(_generate_problematic_relationships_section(analysis))
+
+    # Add recommendations section
+    lines.extend(_generate_recommendations_section(analysis))
+
+    return "\n".join(lines)
+
+
+def _generate_summary_section(analysis: Dict[str, any]) -> List[str]:
+    """Generate the summary section of the report."""
+    lines = []
+
     total = analysis["total_relationships"]
     problematic = len(analysis["problematic"])
     cross_layer = len(analysis["cross_layer"])
     same_layer = len(analysis["same_layer"])
-    
-    lines.append(f"\n📊 Relationship Summary:")
+
+    lines.append("\n📊 Relationship Summary:")
     lines.append(f"  Total relationships: {total}")
     lines.append(f"  Same layer: {same_layer}")
     lines.append(f"  Cross layer: {cross_layer}")
     lines.append(f"  Problematic: {problematic}")
-    
+
     if problematic == 0:
         lines.append("✅ No problematic relationships found")
     else:
         lines.append(f"⚠️  {problematic} relationships may need review")
-    
-    # Layer statistics
+
+    return lines
+
+
+def _generate_layer_statistics_section(analysis: Dict[str, any]) -> List[str]:
+    """Generate the layer statistics section of the report."""
+    lines = []
+
     if analysis["layer_stats"]:
-        lines.append(f"\n🏗️ Layer Connections:")
+        lines.append("\n🏗️ Layer Connections:")
         for layer_combo, count in sorted(analysis["layer_stats"].items()):
             lines.append(f"  {layer_combo}: {count}")
-    
-    # Problematic relationships (if any)
+
+    return lines
+
+
+def _generate_problematic_relationships_section(analysis: Dict[str, any]) -> List[str]:
+    """Generate the problematic relationships section of the report."""
+    lines = []
+    problematic = len(analysis["problematic"])
+
     if problematic > 0:
-        lines.append(f"\n⚠️  Relationships for Review:")
+        lines.append("\n⚠️  Relationships for Review:")
         for rel in analysis["problematic"][:5]:  # Show first 5
             lines.append(f"  • {rel['id']}: {rel['validation']['message']}")
         if problematic > 5:
             lines.append(f"  ... and {problematic - 5} more")
-    
-    lines.append(f"\n💡 Recommendations:")
+
+    return lines
+
+
+def _generate_recommendations_section(analysis: Dict[str, any]) -> List[str]:
+    """Generate the recommendations section of the report."""
+    lines = ["\n💡 Recommendations:"]
+    problematic = len(analysis["problematic"])
+    cross_layer = len(analysis["cross_layer"])
+
     if problematic == 0 and cross_layer > 0:
         lines.append("  • Model uses cross-layer relationships appropriately")
         lines.append("  • Consider documenting cross-layer dependencies")
@@ -238,7 +277,7 @@ def generate_liberal_validation_report(analysis: Dict[str, any]) -> str:
         lines.append("  • Consider using AssociationRelationship for general connections")
     else:
         lines.append("  • Model follows good ArchiMate practices")
-    
+
     lines.append("  • All relationships are semantically valid for tool compatibility")
-    
-    return "\n".join(lines)
+
+    return lines

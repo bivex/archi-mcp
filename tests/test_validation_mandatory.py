@@ -199,14 +199,14 @@ def test_all_tools_have_validation():
     from archi_mcp.server import mcp
     registered_tools = list(mcp._tool_manager._tools.keys())
     
-    # Should have our 2 core tools (updated count after removing analysis tools)
-    expected_tools = ['create_archimate_diagram', 'test_element_normalization']
+    # Should have our core tools
+    expected_tools = ['create_archimate_diagram', 'create_diagram_from_file', 'test_groups_functionality']
     
     for tool in expected_tools:
         assert tool in registered_tools, f"Tool '{tool}' not found in {registered_tools}"
     
-    # We should have at least these 2 tools
-    assert len(registered_tools) >= 2, f"Expected at least 2 tools, got {len(registered_tools)}: {registered_tools}"
+    # We should have at least these core tools
+    assert len(registered_tools) >= 3, f"Expected at least 3 tools, got {len(registered_tools)}: {registered_tools}"
 
 @pytest.mark.integration
 def test_validation_with_real_plantuml():

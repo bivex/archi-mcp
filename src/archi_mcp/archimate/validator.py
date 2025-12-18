@@ -159,53 +159,66 @@ class ArchiMateValidator:
     ) -> List[str]:
         """Check if relationship is compatible with element types."""
         errors = []
-        
-        # Get compatibility from matrix
-        from_key = f"{from_elem.layer.value}_{from_elem.element_type}"
-        to_key = f"{to_elem.layer.value}_{to_elem.element_type}"
         rel_type = relationship.relationship_type
-        
-        # For now, we'll implement basic rules
-        # A full implementation would check the complete ArchiMate relationship matrix
-        
+
+        # Check specific relationship type rules
         if rel_type == ArchiMateRelationshipType.ACCESS:
-            # Access typically from active structure to passive structure
-            if (from_elem.aspect.value != "Active Structure" or 
-                to_elem.aspect.value != "Passive Structure"):
-                errors.append(
-                    f"Access relationship should connect Active Structure to Passive Structure"
-                )
-        
+            errors.extend(_validate_access_relationship(from_elem, to_elem))
         elif rel_type == ArchiMateRelationshipType.ASSIGNMENT:
-            # Assignment typically from active structure to behavior
-            if (from_elem.aspect.value != "Active Structure" or 
-                to_elem.aspect.value != "Behavior"):
-                errors.append(
-                    f"Assignment relationship should connect Active Structure to Behavior"
-                )
-        
+            errors.extend(_validate_assignment_relationship(from_elem, to_elem))
         elif rel_type == ArchiMateRelationshipType.SERVING:
-            # Serving can cross layers but has specific patterns
-            if from_elem.layer == to_elem.layer:
-                # Same layer - check aspects
-                if (from_elem.aspect.value == "Passive Structure" and 
-                    to_elem.aspect.value == "Active Structure"):
-                    errors.append(
-                        f"Serving relationship cannot go from Passive to Active Structure"
-                    )
-        
+            errors.extend(_validate_serving_relationship(from_elem, to_elem))
+
         return errors
-    
+
     def _build_relationship_matrix(self) -> Dict[Tuple[str, str, str], bool]:
         """Build ArchiMate relationship compatibility matrix.
-        
+
         Returns:
             Dictionary mapping (from_type, to_type, relationship_type) to validity
         """
         # This would be a complete implementation of the ArchiMate relationship matrix
         # For now, we return an empty matrix and rely on basic validation
         return {}
-    
+
+
+def _validate_access_relationship(from_elem: ArchiMateElement, to_elem: ArchiMateElement) -> List[str]:
+    """Validate Access relationship compatibility."""
+    errors = []
+    # Access typically from active structure to passive structure
+    if (from_elem.aspect.value != "Active Structure" or
+        to_elem.aspect.value != "Passive Structure"):
+        errors.append(
+            "Access relationship should connect Active Structure to Passive Structure"
+        )
+    return errors
+
+
+def _validate_assignment_relationship(from_elem: ArchiMateElement, to_elem: ArchiMateElement) -> List[str]:
+    """Validate Assignment relationship compatibility."""
+    errors = []
+    # Assignment typically from active structure to behavior
+    if (from_elem.aspect.value != "Active Structure" or
+        to_elem.aspect.value != "Behavior"):
+        errors.append(
+            "Assignment relationship should connect Active Structure to Behavior"
+        )
+    return errors
+
+
+def _validate_serving_relationship(from_elem: ArchiMateElement, to_elem: ArchiMateElement) -> List[str]:
+    """Validate Serving relationship compatibility."""
+    errors = []
+    # Serving can cross layers but has specific patterns
+    if from_elem.layer == to_elem.layer:
+        # Same layer - check aspects
+        if (from_elem.aspect.value == "Passive Structure" and
+            to_elem.aspect.value == "Active Structure"):
+            errors.append(
+                "Serving relationship cannot go from Passive to Active Structure"
+            )
+    return errors
+
     def validate_element_type(self, element_type: str, layer: ArchiMateLayer) -> bool:
         """Validate if element type is valid for the specified layer.
         

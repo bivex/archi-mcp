@@ -59,7 +59,7 @@ from ..models import DiagramInput
 from ..response_models import DiagramGenerationResponse, GroupsTestResponse, DiagramFiles, DiagramEnhancementRequest
 
 
-def _enhance_validation_error(error_msg: str, diagram_data: dict) -> str:
+def _enhance_validation_error(error_msg: str, diagram_data) -> str:
     """Enhance validation error messages with helpful guidance."""
     enhanced_msg = error_msg
 
@@ -100,17 +100,26 @@ def _add_field_validation_tips(enhanced_msg: str, error_msg: str) -> str:
     return enhanced_msg
 
 
-def _add_note_validation_tips(enhanced_msg: str, error_msg: str, diagram_data: dict) -> str:
+def _add_note_validation_tips(enhanced_msg: str, error_msg: str, diagram_data) -> str:
     """Add tips for note definition issues."""
-    if "note" in error_msg.lower() or "notes" in diagram_data.get("elements", []):
+    # Handle both dict and DiagramInput objects
+    if hasattr(diagram_data, 'elements'):
+        elements = diagram_data.elements
+    else:
         elements = diagram_data.get("elements", [])
+
+    if "note" in error_msg.lower() or any(hasattr(elem, 'notes') or (isinstance(elem, dict) and elem.get("notes")) for elem in elements):
         for elem in elements:
-            if elem.get("element_type") == "Note" or elem.get("name", "").lower() == "note":
+            # Handle both dict and object attributes
+            elem_type = getattr(elem, 'element_type', None) or elem.get("element_type") if isinstance(elem, dict) else None
+            elem_name = getattr(elem, 'name', '') or elem.get("name", "") if isinstance(elem, dict) else ''
+            if elem_type == "Note" or elem_name.lower() == "note":
                 enhanced_msg += "\n\n💡 TIP: Notes should be defined within elements, not as separate elements.\n" \
                                "Correct way:\n" \
                                '{"id": "component1", "name": "My Component", "element_type": "Application_Component", "layer": "Application",\n' \
                                ' "notes": [{"content": "This is a note", "position": "right"}]}\n\n' \
                                "NOT as separate elements with relationships!"
+                break
     return enhanced_msg
 
 
