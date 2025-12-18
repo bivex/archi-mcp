@@ -31,6 +31,9 @@ from . import request_processors  # noqa: F401
 # Import resources to register them with MCP server
 from . import resources  # noqa: F401
 
+# Import prompts to register them with MCP server
+from . import prompts  # noqa: F401
+
 
 def main():
     """Main entry point for the ArchiMate MCP server."""

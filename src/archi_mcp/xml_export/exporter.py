@@ -72,6 +72,23 @@ class ArchiMateXMLExporter:
             None: self.ARCHIMATE_NAMESPACE,
             'xsi': self.XSI_NAMESPACE
         }
+        self.layout_config = {
+            "layer_height": DEFAULT_LAYER_HEIGHT,
+            "element_width": DEFAULT_ELEMENT_WIDTH,
+            "start_x": DEFAULT_MARGIN_X,
+            "start_y": DEFAULT_MARGIN_Y,
+            "max_elements_per_row": 3,
+            "element_spacing_y": ELEMENT_SPACING_Y
+        }
+        self.layer_hierarchy = [
+            "Motivation",
+            "Strategy", 
+            "Business",
+            "Application",
+            "Technology",
+            "Physical",
+            "Implementation"
+        ]
         
     def export_to_xml(
         self,
@@ -496,52 +513,28 @@ class ArchiMateXMLExporter:
             viewpoint_prop.set("key", "viewpoint")
             viewpoint_prop.set("value", "layered")
     
-    def _calculate_intelligent_layout(self, elements: List[ArchiMateElement], relationships: List[ArchiMateRelationship]):
+    def _calculate_intelligent_layout(self, elements: List[ArchiMateElement], relationships: List[ArchiMateRelationship]) -> Dict[str, Dict[str, int]]:
         """Calculate intelligent layout positions for elements based on ArchiMate layer hierarchy."""
         positions = {}
         
-        # ArchiMate layer hierarchy (top to bottom) - FIXED ORDER
-        layer_hierarchy = [
-            "Motivation",
-            "Strategy", 
-            "Business",
-            "Application",
-            "Technology",
-            "Physical",
-            "Implementation"
-        ]
-        
         # Group elements by their actual ArchiMate layer
-        layer_groups = {layer: [] for layer in layer_hierarchy}
-        
-        # Categorize elements by their actual layer
-        for element in elements:
-            layer = element.layer.value if hasattr(element.layer, 'value') else str(element.layer)
-            if layer in layer_groups:
-                layer_groups[layer].append(element)
-            else:
-                # If unknown layer, add to Business as fallback
-                layer_groups["Business"].append(element)
+        layer_groups = self._group_elements_by_layer(elements)
         
         # Build relationship graph for positioning within layers
-        element_connections = {}
-        for element in elements:
-            element_connections[element.id] = {"outgoing": [], "incoming": []}
-        
-        for relationship in relationships:
-            if relationship.from_element in element_connections:
-                element_connections[relationship.from_element]["outgoing"].append(relationship.to_element)
-            if relationship.to_element in element_connections:
-                element_connections[relationship.to_element]["incoming"].append(relationship.from_element)
+        element_connections = self._build_element_connection_graph(elements, relationships)
         
         # Layout configuration - optimized for visual clarity
         layer_height = DEFAULT_LAYER_HEIGHT  # Vertical space between layers
-        element_width = DEFAULT_ELEMENT_WIDTH   # Horizontal space between elements
-        start_x = DEFAULT_MARGIN_X          # Left margin
-        start_y = DEFAULT_MARGIN_Y          # Top margin
-        max_elements_per_row = 3  # Fewer elements per row for better readability
+        self.layout_config = {
+            "layer_height": DEFAULT_LAYER_HEIGHT,
+            "element_width": DEFAULT_ELEMENT_WIDTH,
+            "start_x": DEFAULT_MARGIN_X,
+            "start_y": DEFAULT_MARGIN_Y,
+            "max_elements_per_row": 3,
+            "element_spacing_y": ELEMENT_SPACING_Y
+        }
         
-        current_y = start_y
+        current_y = self.layout_config["start_y"]
         
         # Position elements layer by layer following ArchiMate hierarchy
         for layer_name in layer_hierarchy:

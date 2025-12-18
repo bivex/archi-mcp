@@ -30,7 +30,7 @@ ArchiMate MCP Server fills a crucial gap in the MCP ecosystem by providing dedic
 - **Intelligent Input Normalization**: Case-insensitive inputs with automatic correction and helpful error messages
 - **Built-in Validation**: Comprehensive 4-step validation pipeline with real-time error detection
 - **macOS-Optimized PNG/SVG Generation**: Headless mode prevents cursor interference + live HTTP server for instant viewing (uses up-to-date PlantUML 1.2025.4)
-- **2 Core MCP Tools**: Focused diagram creation and element normalization testing
+- **2 Core MCP Tools + 5 Expert Prompts**: Focused diagram creation and element normalization testing, plus expert-level prompts for enterprise architecture, business capability mapping, technology design, implementation planning, and stakeholder analysis
 - **Real-time Error Analysis**: Actionable troubleshooting guidance with pattern recognition and fix suggestions
 - **FastMCP 2.8+ Integration**: Modern MCP protocol implementation with comprehensive schema discovery
 - **Production-Ready Testing**: 201 passing tests with 59% coverage and comprehensive test suites across all layers
