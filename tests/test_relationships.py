@@ -198,7 +198,7 @@ class TestArchiMateRelationship:
         )
 
         plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
-        expected = '"corner1" --up-right-( "corner2"'
+        expected = '"corner1" -up-right-( "corner2"'
         assert plantuml == expected
 
     def test_plantuml_complex_relationship(self):
@@ -216,7 +216,7 @@ class TestArchiMateRelationship:
         )
 
         plantuml = relationship.to_plantuml(show_labels=True, use_arrow_styles=True)
-        expected = '"complex_src" ..down.>2 "complex_tgt" #00FF00 : complex label'
+        expected = '"complex_src" .down.|>2 "complex_tgt" #00FF00 : complex label'
         assert plantuml == expected
 
     def test_plantuml_legacy_format_with_new_features(self):
