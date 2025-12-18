@@ -40,8 +40,8 @@ def start_http_server():
         logger = get_logger(__name__)
 
         # Ensure exports directory exists
-        exports_dir = os.path.join(os.getcwd(), "exports")
-        os.makedirs(exports_dir, exist_ok=True)
+        from .export_manager import get_exports_directory
+        exports_dir = get_exports_directory()
 
         app = Starlette(routes=[
             Mount("/exports", StaticFiles(directory=exports_dir), name="exports"),

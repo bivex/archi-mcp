@@ -9,10 +9,11 @@ def get_exports_directory() -> Path:
     """Get the exports directory path, creating it if needed.
 
     Returns:
-        Path to the exports directory
+        Path to the exports directory in Documents folder
     """
-    exports_dir = Path.cwd() / "exports"
-    exports_dir.mkdir(exist_ok=True)
+    # Use Documents folder instead of project directory
+    exports_dir = Path.home() / "Documents" / "archi-mcp-exports"
+    exports_dir.mkdir(parents=True, exist_ok=True)
     return exports_dir
 
 
@@ -46,11 +47,12 @@ def _get_export_subdirectories(exports_dir: Path) -> list:
 
 
 def _identify_failed_exports(export_subdirs: list) -> list:
-    """Identify export directories that don't contain a PNG file."""
+    """Identify export directories that don't contain any PNG file."""
     failed_dirs = []
     for export_dir in export_subdirs:
-        png_file = export_dir / "diagram.png"
-        if not png_file.exists():
+        # Check if directory contains any PNG files
+        has_png = any(f.suffix.lower() == '.png' for f in export_dir.iterdir() if f.is_file())
+        if not has_png:
             failed_dirs.append(export_dir)
     return failed_dirs
 

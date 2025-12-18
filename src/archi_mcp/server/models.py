@@ -20,15 +20,24 @@ class ElementInput(BaseModel):
 
     @model_validator(mode='after')
     def validate_layer_and_aspect(self) -> 'ElementInput':
-        """Validate that layer and aspect are compatible."""
+        """Validate that layer and aspect are compatible. Auto-corrects case sensitivity."""
         valid_layers = {"Business", "Application", "Technology", "Physical", "Motivation", "Strategy", "Implementation"}
         valid_aspects = {"Active Structure", "Passive Structure", "Behavior"}
 
-        if self.layer not in valid_layers:
-            raise ValueError(f"Invalid layer '{self.layer}'. Valid layers: {valid_layers}")
+        # Auto-correct layer case (case-insensitive matching)
+        layer_lower_map = {layer.lower(): layer for layer in valid_layers}
+        if self.layer.lower() in layer_lower_map:
+            self.layer = layer_lower_map[self.layer.lower()]
+        else:
+            raise ValueError(f"Invalid layer '{self.layer}'. Valid layers (case-insensitive): {sorted(valid_layers)}")
 
-        if self.aspect and self.aspect not in valid_aspects:
-            raise ValueError(f"Invalid aspect '{self.aspect}'. Valid aspects: {valid_aspects}")
+        # Auto-correct aspect case if provided
+        if self.aspect:
+            aspect_lower_map = {aspect.lower(): aspect for aspect in valid_aspects}
+            if self.aspect.lower() in aspect_lower_map:
+                self.aspect = aspect_lower_map[self.aspect.lower()]
+            else:
+                raise ValueError(f"Invalid aspect '{self.aspect}'. Valid aspects (case-insensitive): {sorted(valid_aspects)}")
 
         return self
 
@@ -69,17 +78,26 @@ class RelationshipInput(BaseModel):
 
     @model_validator(mode='after')
     def validate_relationship_type(self) -> 'RelationshipInput':
-        """Validate relationship type."""
+        """Validate relationship type. Auto-corrects case sensitivity."""
         valid_types = {
             "Access", "Aggregation", "Assignment", "Association", "Composition",
             "Flow", "Influence", "Realization", "Serving", "Specialization", "Triggering"
         }
 
-        if self.relationship_type not in valid_types:
-            raise ValueError(f"Invalid relationship type '{self.relationship_type}'. Valid types: {valid_types}")
+        # Auto-correct relationship type case (case-insensitive matching)
+        type_lower_map = {rtype.lower(): rtype for rtype in valid_types}
+        if self.relationship_type.lower() in type_lower_map:
+            self.relationship_type = type_lower_map[self.relationship_type.lower()]
+        else:
+            raise ValueError(f"Invalid relationship type '{self.relationship_type}'. Valid types (case-insensitive): {sorted(valid_types)}")
 
-        if self.direction and self.direction not in {"Up", "Down", "Left", "Right"}:
-            raise ValueError(f"Invalid direction '{self.direction}'. Valid directions: Up, Down, Left, Right")
+        # Auto-correct direction case if provided
+        if self.direction:
+            direction_lower_map = {d.lower(): d for d in {"Up", "Down", "Left", "Right"}}
+            if self.direction.lower() in direction_lower_map:
+                self.direction = direction_lower_map[self.direction.lower()]
+            else:
+                raise ValueError(f"Invalid direction '{self.direction}'. Valid directions (case-insensitive): Up, Down, Left, Right")
 
         if self.length is not None and not (1 <= self.length <= 5):
             raise ValueError(f"Invalid length '{self.length}'. Length must be between 1 and 5")

@@ -388,6 +388,7 @@ def create_archimate_diagram_impl(diagram: DiagramInput) -> str:
     • Enhanced Arrow Control: Full directional control with length modifiers (1-5), line styles (solid/dashed/dotted), custom colors, orientation modes (vertical/horizontal/dot), and positioning hints (`hidden` relationships).
     • Component-Specific Styling: Advanced skinparam customization with component-style variants (`uml1`, `uml2`, `rectangle`).
     • Naming Rules: Components with names starting with '$' require an alias or tag to be hideable/removable (PlantUML limitation).
+    • Note Definition: Notes must be defined within element objects using the 'notes' array, not as separate elements. Example: {"id": "comp1", "notes": [{"content": "Important note", "position": "right"}]}
     • Sprites in Stereotypes: Use custom PlantUML sprites with `$sprite_name` syntax (e.g., `<<$businessProcess>>`) for visual stereotypes.
     • JSON Data Display: Embed JSON data objects in diagrams with automatic `allowmixing` directive for mixed diagram types.
     • Advanced Hide/Remove System: Use `$tags` for selective element visibility control with `hide $tag` and `remove $tag` operations. Also supports `hide_unlinked` and `remove_unlinked` for automatic handling of elements without relationships, and `remove_all_tagged` for wildcard removal of all tagged elements with selective restore.
@@ -395,6 +396,7 @@ def create_archimate_diagram_impl(diagram: DiagramInput) -> str:
     • Enhanced Arrow Control: Full directional control with length modifiers (1-5), line styles (solid/dashed/dotted), custom colors, orientation modes (vertical/horizontal/dot), and positioning hints (`hidden` relationships).
     • Component-Specific Styling: Advanced skinparam customization with component-style variants (`uml1`, `uml2`, `rectangle`).
     • Naming Rules: Components with names starting with '$' require an alias or tag to be hideable/removable (PlantUML limitation).
+    • Note Definition: Notes must be defined within element objects using the 'notes' array, not as separate elements. Example: {"id": "comp1", "notes": [{"content": "Important note", "position": "right"}]}
 
     Args:
         diagram: A `DiagramInput` object containing the specification for the diagram.

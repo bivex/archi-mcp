@@ -44,6 +44,50 @@ from ..error_handler import build_enhanced_error_response
 from ..export_manager import create_export_directory
 from ..models import DiagramInput
 
+
+def _enhance_validation_error(error_msg: str, diagram_data: dict) -> str:
+    """Enhance validation error messages with helpful guidance."""
+    enhanced_msg = error_msg
+
+    # Check for common missing field errors
+    if "id" in error_msg.lower() and "required" in error_msg.lower():
+        enhanced_msg += "\n\n💡 TIP: Each element needs a unique 'id' field. Example:\n" \
+                       '{"id": "web_server", "name": "Web Server", "element_type": "Application_Component", "layer": "Application"}'
+
+    if "element_type" in error_msg.lower() and "required" in error_msg.lower():
+        enhanced_msg += "\n\n💡 TIP: Elements need an 'element_type' field. Common types:\n" \
+                       "• Business: Business_Actor, Business_Process, Business_Function\n" \
+                       "• Application: Application_Component, Application_Function\n" \
+                       "• Technology: Technology_Node, Technology_SystemSoftware"
+
+    if "layer" in error_msg.lower() and "required" in error_msg.lower():
+        enhanced_msg += "\n\n💡 TIP: Elements need a 'layer' field (case-insensitive). Valid layers:\n" \
+                       "Business, Application, Technology, Physical, Motivation, Strategy, Implementation"
+
+    if "relationship_type" in error_msg.lower() and "required" in error_msg.lower():
+        enhanced_msg += "\n\n💡 TIP: Relationships need a 'relationship_type' field (case-insensitive). Common types:\n" \
+                       "Serving, Realization, Access, Composition, Aggregation, Assignment"
+
+    # Check for note definition issues
+    if "note" in error_msg.lower() or "notes" in diagram_data.get("elements", []):
+        elements = diagram_data.get("elements", [])
+        for elem in elements:
+            if elem.get("element_type") == "Note" or elem.get("name", "").lower() == "note":
+                enhanced_msg += "\n\n💡 TIP: Notes should be defined within elements, not as separate elements.\n" \
+                               "Correct way:\n" \
+                               '{"id": "component1", "name": "My Component", "element_type": "Application_Component", "layer": "Application",\n' \
+                               ' "notes": [{"content": "This is a note", "position": "right"}]}\n\n' \
+                               "NOT as separate elements with relationships!"
+
+    # Check for case sensitivity issues (though we now auto-correct them)
+    if "invalid layer" in error_msg.lower():
+        enhanced_msg += "\n\n💡 NOTE: Layer names are now case-insensitive and auto-corrected."
+
+    if "invalid relationship type" in error_msg.lower():
+        enhanced_msg += "\n\n💡 NOTE: Relationship types are now case-insensitive and auto-corrected."
+
+    return enhanced_msg
+
 # Make DiagramInput available globally for MCP decorators
 globals()['DiagramInput'] = DiagramInput
 
@@ -107,6 +151,7 @@ def create_archimate_diagram(diagram: dict) -> str:
     • Enhanced Arrow Control: Full directional control with length modifiers (1-5), line styles (solid/dashed/dotted), custom colors, orientation modes (vertical/horizontal/dot), and positioning hints (`hidden` relationships).
     • Component-Specific Styling: Advanced skinparam customization with component-style variants (`uml1`, `uml2`, `rectangle`).
     • Naming Rules: Components with names starting with '$' require an alias or tag to be hideable/removable (PlantUML limitation).
+    • Note Definition: Notes must be defined within element objects using the 'notes' array, not as separate elements. Example: {"id": "comp1", "notes": [{"content": "Important note", "position": "right"}]}
 
     Args:
         diagram: A `DiagramInput` object containing the specification for the diagram.
@@ -124,7 +169,8 @@ def create_archimate_diagram(diagram: dict) -> str:
         return create_archimate_diagram_impl(diagram_input)
     except Exception as e:
         logger.error(f"Error creating ArchiMate diagram: {e}")
-        raise ArchiMateError(f"Failed to create ArchiMate diagram: {str(e)}")
+        enhanced_error = _enhance_validation_error(str(e), diagram)
+        raise ArchiMateError(f"Failed to create ArchiMate diagram: {enhanced_error}")
 
 
 @mcp.tool()

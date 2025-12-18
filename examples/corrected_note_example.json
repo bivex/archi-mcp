@@ -1,0 +1,43 @@
+{
+  "title": "Component Diagram with Proper Note Definition",
+  "description": "Example showing correct note definition within elements",
+  "elements": [
+    {
+      "id": "web_server",
+      "name": "Web Server",
+      "element_type": "Application_Component",
+      "layer": "application",
+      "notes": [
+        {
+          "content": "Handles HTTP requests",
+          "position": "top"
+        },
+        {
+          "content": "Requires database connection",
+          "position": "right"
+        }
+      ]
+    },
+    {
+      "id": "database",
+      "name": "Database Server",
+      "element_type": "Application_Component",
+      "layer": "application",
+      "notes": [
+        {
+          "content": "MySQL database",
+          "position": "bottom"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "id": "web_to_db",
+      "from_element": "web_server",
+      "to_element": "database",
+      "relationship_type": "serving",
+      "description": "Web server serves database"
+    }
+  ]
+}
