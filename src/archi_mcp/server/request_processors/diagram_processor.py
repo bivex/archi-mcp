@@ -25,7 +25,7 @@ import platform
 import threading
 import socket
 from pathlib import Path
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING, Any
 from fastmcp import FastMCP, Context
 
 if TYPE_CHECKING:
@@ -105,7 +105,7 @@ def _enhance_validation_error(error_msg: str, diagram_data: dict) -> str:
 # Make DiagramInput available globally for MCP decorators
 globals()['DiagramInput'] = DiagramInput
 
-__all__ = ['create_archimate_diagram', 'create_diagram_from_file', 'test_groups_functionality', 'enhance_diagram_with_feedback']
+__all__ = ['create_archimate_diagram', 'create_diagram_from_file', 'test_groups_functionality', 'enhance_diagram_with_feedback', 'list_available_resources', 'create_diagram_from_template']
 
 # Import the main MCP instance
 from ..main import mcp
@@ -363,6 +363,75 @@ def test_groups_functionality() -> GroupsTestResponse:
             files=DiagramFiles(plantuml="", png=""),
             features_tested=[]
         )
+
+
+@mcp.tool()
+def list_available_resources() -> str:
+    """List all available MCP resources for ArchiMate diagram generation."""
+    resources = {
+        "archi://elements": "Available ArchiMate elements organized by layer and aspect",
+        "archi://relationships": "Available ArchiMate relationship types",
+        "archi://themes": "Available visual themes for diagram generation",
+        "archi://languages": "Supported languages for internationalization",
+        "archi://templates/basic": "Basic diagram template for getting started",
+        "archi://templates/layered-architecture": "Complete layered enterprise architecture template",
+        "archi://help/quick-reference": "Quick reference guide for using ArchiMate MCP tools",
+        "archi://examples/{example_name}": "Specific diagram examples (simple-service, microservices)",
+        "archi://config/defaults": "Default configuration settings"
+    }
+
+    return json.dumps({
+        "description": "Available MCP resources for ArchiMate diagram generation",
+        "resources": resources,
+        "usage": "Use these URIs with your MCP client to access the data",
+        "count": len(resources)
+    }, indent=2)
+
+
+@mcp.tool()
+def create_diagram_from_template(template_name: str, customizations: Optional[Dict[str, Any]] = None) -> DiagramGenerationResponse:
+    """Create a diagram from a predefined template with optional customizations.
+
+    Args:
+        template_name: Name of the template ('basic' or 'layered-architecture')
+        customizations: Optional dictionary with customizations (title, theme, etc.)
+
+    Returns:
+        DiagramGenerationResponse with the generated diagram
+    """
+    try:
+        # Import template functions
+        from ..resources import get_basic_diagram_template, get_layered_architecture_template
+
+        # Get the appropriate template
+        if template_name == "basic":
+            template_json = get_basic_diagram_template()
+        elif template_name == "layered-architecture":
+            template_json = get_layered_architecture_template()
+        else:
+            raise ArchiMateError(f"Unknown template: {template_name}. Available: basic, layered-architecture")
+
+        # Parse template
+        template_data = json.loads(template_json)
+
+        # Apply customizations if provided
+        if customizations:
+            if "title" in customizations:
+                template_data["title"] = customizations["title"]
+            if "description" in customizations:
+                template_data["description"] = customizations["description"]
+            if "theme" in customizations:
+                template_data["layout"]["theme"] = customizations["theme"]
+            if "direction" in customizations:
+                template_data["layout"]["direction"] = customizations["direction"]
+
+        # Create diagram input and generate
+        diagram_input = DiagramInput.model_validate(template_data)
+        return create_archimate_diagram_impl(diagram_input)
+
+    except Exception as e:
+        logger.error(f"Error creating diagram from template: {e}")
+        raise ArchiMateError(f"Failed to create diagram from template '{template_name}': {str(e)}")
 
 
 @mcp.tool()

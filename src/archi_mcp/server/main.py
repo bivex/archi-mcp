@@ -28,6 +28,9 @@ logger = get_logger(__name__)
 # Import request processors to register tools
 from . import request_processors  # noqa: F401
 
+# Import resources to register them with MCP server
+from . import resources  # noqa: F401
+
 
 def main():
     """Main entry point for the ArchiMate MCP server."""
