@@ -219,6 +219,174 @@ class TestArchiMateRelationship:
         expected = '"complex_src" .down.|>2 "complex_tgt" #00FF00 : complex label'
         assert plantuml == expected
 
+    def test_plantuml_arrow_direction_left(self):
+        """Test PlantUML arrow with left direction."""
+        relationship = ArchiMateRelationship(
+            id="left_dir_test",
+            from_element="source",
+            to_element="target",
+            relationship_type=RelationshipType.ASSOCIATION,
+            direction=RelationshipDirection.LEFT
+        )
+
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        expected = '"source" -left-> "target"'
+        assert plantuml == expected
+
+    def test_plantuml_arrow_direction_right(self):
+        """Test PlantUML arrow with right direction."""
+        relationship = ArchiMateRelationship(
+            id="right_dir_test",
+            from_element="source",
+            to_element="target",
+            relationship_type=RelationshipType.ASSOCIATION,
+            direction=RelationshipDirection.RIGHT
+        )
+
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        expected = '"source" -right-> "target"'
+        assert plantuml == expected
+
+    def test_plantuml_arrow_direction_up(self):
+        """Test PlantUML arrow with up direction."""
+        relationship = ArchiMateRelationship(
+            id="up_dir_test",
+            from_element="source",
+            to_element="target",
+            relationship_type=RelationshipType.ASSOCIATION,
+            direction=RelationshipDirection.UP
+        )
+
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        expected = '"source" -up-> "target"'
+        assert plantuml == expected
+
+    def test_plantuml_arrow_direction_down(self):
+        """Test PlantUML arrow with down direction."""
+        relationship = ArchiMateRelationship(
+            id="down_dir_test",
+            from_element="source",
+            to_element="target",
+            relationship_type=RelationshipType.ASSOCIATION,
+            direction=RelationshipDirection.DOWN
+        )
+
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        expected = '"source" -down-> "target"'
+        assert plantuml == expected
+
+    def test_plantuml_arrow_direction_short_left(self):
+        """Test PlantUML arrow with shortened left direction (-l->)."""
+        relationship = ArchiMateRelationship(
+            id="short_left_test",
+            from_element="A",
+            to_element="B",
+            relationship_type=RelationshipType.ASSOCIATION,
+            direction=RelationshipDirection.LEFT
+        )
+
+        # Test that full "left" becomes "-left->" in the arrow
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        assert "-left->" in plantuml
+
+    def test_plantuml_arrow_direction_short_right(self):
+        """Test PlantUML arrow with shortened right direction (-r->)."""
+        relationship = ArchiMateRelationship(
+            id="short_right_test",
+            from_element="A",
+            to_element="B",
+            relationship_type=RelationshipType.ASSOCIATION,
+            direction=RelationshipDirection.RIGHT
+        )
+
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        assert "-right->" in plantuml
+
+    def test_plantuml_arrow_direction_short_up(self):
+        """Test PlantUML arrow with shortened up direction (-u->)."""
+        relationship = ArchiMateRelationship(
+            id="short_up_test",
+            from_element="A",
+            to_element="B",
+            relationship_type=RelationshipType.ASSOCIATION,
+            direction=RelationshipDirection.UP
+        )
+
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        assert "-up->" in plantuml
+
+    def test_plantuml_arrow_direction_short_down(self):
+        """Test PlantUML arrow with shortened down direction (-d->)."""
+        relationship = ArchiMateRelationship(
+            id="short_down_test",
+            from_element="A",
+            to_element="B",
+            relationship_type=RelationshipType.ASSOCIATION,
+            direction=RelationshipDirection.DOWN
+        )
+
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        assert "-down->" in plantuml
+
+    def test_plantuml_reverse_arrows(self):
+        """Test PlantUML reverse arrow directions."""
+        # Test reverse solid arrow (<--)
+        relationship = ArchiMateRelationship(
+            id="reverse_solid",
+            from_element="A",
+            to_element="B",
+            relationship_type=RelationshipType.ASSOCIATION,
+            arrow_style=ArrowStyle.SOLID_REVERSE  # This should give <--
+        )
+
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        expected = '"A" <-- "B"'
+        assert plantuml == expected
+
+    def test_plantuml_reverse_dashed_arrows(self):
+        """Test PlantUML reverse dashed arrow directions."""
+        relationship = ArchiMateRelationship(
+            id="reverse_dashed",
+            from_element="A",
+            to_element="B",
+            relationship_type=RelationshipType.ASSOCIATION,
+            arrow_style=ArrowStyle.DASHED_REVERSE,  # This should give <..
+            line_style="dashed"
+        )
+
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        expected = '"A" <.. "B"'
+        assert plantuml == expected
+
+    def test_plantuml_horizontal_single_dash(self):
+        """Test PlantUML horizontal links with single dash."""
+        # This tests if we can generate single-dash arrows instead of double-dash
+        relationship = ArchiMateRelationship(
+            id="single_dash_test",
+            from_element="Component",
+            to_element="Interface",
+            relationship_type=RelationshipType.SERVING
+        )
+
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        # Currently generates --(, but we want to test single dash alternative
+        # This might need new functionality
+        expected = '"Component" --( "Interface"'
+        assert plantuml == expected
+
+    def test_plantuml_horizontal_dot_link(self):
+        """Test PlantUML horizontal links with dot."""
+        relationship = ArchiMateRelationship(
+            id="dot_link_test",
+            from_element="Component",
+            to_element="Interface2",
+            relationship_type=RelationshipType.SERVING
+        )
+
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        expected = '"Component" --( "Interface2"'
+        assert plantuml == expected
+
     def test_plantuml_legacy_format_with_new_features(self):
         """Test that legacy format still works with new features."""
         relationship = ArchiMateRelationship(

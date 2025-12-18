@@ -74,6 +74,7 @@ class ArchiMateRelationship(BaseModel):
     label: Optional[str] = Field(None, description="Relationship label")
     length: Optional[int] = Field(None, description="Arrow length modifier (1-5)")
     positioning: Optional[str] = Field(None, description="Advanced positioning hints (e.g., 'hidden' for invisible layout relationships)")
+    orientation: str = Field("vertical", description="Arrow orientation: vertical (default --), horizontal (-), or dot (.)")
     properties: dict = Field(default_factory=dict, description="Additional properties")
 
     def get_default_arrow_style(self) -> ArrowStyle:
@@ -103,6 +104,14 @@ class ArchiMateRelationship(BaseModel):
 
         # Start with the arrow style value as a string for modifications
         final_arrow = arrow_style.value
+
+        # Apply orientation modifications
+        if self.orientation == "horizontal":
+            # Convert vertical arrows (--) to horizontal (-)
+            final_arrow = final_arrow.replace("--", "-")
+        elif self.orientation == "dot":
+            # Convert to dot notation
+            final_arrow = final_arrow.replace("-->", ".").replace("--", ".").replace("..", ".")
 
         # Apply line style modifications
         if self.line_style == "dashed":
