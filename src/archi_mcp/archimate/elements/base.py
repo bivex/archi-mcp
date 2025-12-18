@@ -80,6 +80,67 @@ class ComponentGroupingStyle(str, Enum):
     RECTANGLE = "rectangle"
 
 
+class ArchiMateGroup(BaseModel):
+    """Named group container for ArchiMate elements."""
+
+    id: str = Field(..., description="Unique identifier for the group")
+    name: str = Field(..., description="Display name of the group")
+    group_type: ComponentGroupingStyle = Field(..., description="Type of grouping construct (package, node, etc.)")
+    parent_group_id: Optional[str] = Field(None, description="ID of parent group for nested groups")
+    element_ids: List[str] = Field(default_factory=list, description="IDs of elements belonging to this group")
+    description: Optional[str] = Field(None, description="Group description")
+    properties: Dict[str, Any] = Field(default_factory=dict, description="Additional properties")
+
+    def to_plantuml(self, indent: int = 0) -> str:
+        """Generate PlantUML code for this group.
+
+        Args:
+            indent: Number of spaces to indent the group
+
+        Returns:
+            PlantUML code string
+        """
+        indent_str = "  " * indent
+        lines = []
+
+        # Generate group start
+        safe_name = self.name.encode('utf-8').decode('utf-8')
+        if self.group_type == ComponentGroupingStyle.PACKAGE:
+            lines.append(f"{indent_str}package \"{safe_name}\" {{")
+        elif self.group_type == ComponentGroupingStyle.NODE:
+            lines.append(f"{indent_str}node \"{safe_name}\" {{")
+        elif self.group_type == ComponentGroupingStyle.FOLDER:
+            lines.append(f"{indent_str}folder \"{safe_name}\" {{")
+        elif self.group_type == ComponentGroupingStyle.FRAME:
+            lines.append(f"{indent_str}frame \"{safe_name}\" {{")
+        elif self.group_type == ComponentGroupingStyle.CLOUD:
+            lines.append(f"{indent_str}cloud \"{safe_name}\" {{")
+        elif self.group_type == ComponentGroupingStyle.DATABASE:
+            lines.append(f"{indent_str}database \"{safe_name}\" {{")
+        elif self.group_type == ComponentGroupingStyle.RECTANGLE:
+            lines.append(f"{indent_str}rectangle \"{safe_name}\" {{")
+        else:
+            lines.append(f"{indent_str}package \"{safe_name}\" {{")  # Default fallback
+
+        # Add description as comment if present
+        if self.description:
+            lines.append(f"{indent_str}  ' {self.description}")
+
+        return "\n".join(lines)
+
+    def to_plantuml_end(self, indent: int = 0) -> str:
+        """Generate PlantUML closing brace for this group.
+
+        Args:
+            indent: Number of spaces to indent the closing brace
+
+        Returns:
+            PlantUML closing brace
+        """
+        indent_str = "  " * indent
+        return f"{indent_str}}}"
+
+
 class PortDirection(str, Enum):
     """Port direction for component interfaces."""
     INPUT = "portin"
@@ -174,6 +235,7 @@ class ArchiMateElement(BaseModel):
     stereotype: Optional[str] = Field(None, description="Element stereotype (supports sprites with $sprite_name)")
     sprites: List[PlantUMLSprite] = Field(default_factory=list, description="Custom PlantUML sprites for this element")
     tags: List[str] = Field(default_factory=list, description="Tags for hide/remove operations (e.g., $tag1, $tag2)")
+    group_id: Optional[str] = Field(None, description="ID of the group this element belongs to")
     properties: Dict[str, Any] = Field(default_factory=dict, description="Additional properties")
     documentation: Optional[str] = Field(None, description="Element documentation")
 

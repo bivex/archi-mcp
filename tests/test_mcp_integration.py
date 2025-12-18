@@ -49,7 +49,8 @@ def test_fastmcp_tools_registration():
     # Check expected core tools are registered (4-tool focused API)
     expected_tools = [
         'create_archimate_diagram',
-        'test_element_normalization'
+        'create_diagram_from_file',
+        'test_groups_functionality'
     ]
     
     registered_tools = list(mcp._tool_manager._tools.keys())

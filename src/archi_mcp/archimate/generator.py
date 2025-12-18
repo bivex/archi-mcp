@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Any, Union
 from pydantic import BaseModel, Field
 import json
 
-from .elements.base import ArchiMateElement
+from .elements.base import ArchiMateElement, ArchiMateGroup
 from .relationships import ArchiMateRelationship
 from .themes import DiagramStyling, DiagramTheme, PlantUMLSkinParams
 from ..utils.exceptions import ArchiMateError, ArchiMateGenerationError
@@ -52,6 +52,7 @@ class DiagramLayout(BaseModel):
     grouping_depth: int = 1  # how many levels to group
     group_by_aspect: bool = False  # group by ArchiMate aspects too
     show_empty_groups: bool = False  # show groups even if empty
+    group_by_groups: bool = False  # group elements by named groups instead of layers
 
 
 class ArchiMateGenerator:
@@ -65,6 +66,7 @@ class ArchiMateGenerator:
         """
         self.elements: Dict[str, ArchiMateElement] = {}
         self.relationships: List[ArchiMateRelationship] = []
+        self.groups: Dict[str, ArchiMateGroup] = {}
         self.json_objects: List[PlantUMLJSONObject] = []
         self.hidden_elements: set = set()  # Elements to hide by ID
         self.removed_elements: set = set()  # Elements to remove by ID
@@ -120,6 +122,23 @@ class ArchiMateGenerator:
             json_obj: PlantUMLJSONObject to add
         """
         self.json_objects.append(json_obj)
+
+    def add_group(self, group: ArchiMateGroup) -> None:
+        """Add an ArchiMate group to the diagram.
+
+        Args:
+            group: ArchiMateGroup to add
+
+        Raises:
+            ArchiMateGenerationError: If group ID already exists
+        """
+        if group.id in self.groups:
+            raise ArchiMateGenerationError(
+                f"Group with ID '{group.id}' already exists",
+                details={"existing_group": str(self.groups[group.id])}
+            )
+
+        self.groups[group.id] = group
 
     def hide_elements(self, element_ids: List[str]) -> None:
         """Hide specific elements by ID.
@@ -297,7 +316,9 @@ class ArchiMateGenerator:
         lines.append("")
         
         # Generate elements - use layout setting for grouping
-        if self.layout.group_by_layer:
+        if self.layout.group_by_groups:
+            self._generate_elements_by_groups(lines)
+        elif self.layout.group_by_layer:
             self._generate_elements_by_layer(lines)
         else:
             self._generate_elements_sequential(lines)
@@ -322,7 +343,89 @@ class ArchiMateGenerator:
         lines.append("@enduml")
         
         return "\n".join(lines)
-    
+
+    def _generate_elements_by_groups(self, lines: List[str]) -> None:
+        """Generate elements grouped by named groups with support for nested groups."""
+        lines.append("' Elements")
+
+        # Build group hierarchy
+        group_hierarchy = self._build_group_hierarchy()
+
+        # Generate top-level groups (groups without parents)
+        for group_id, group in self.groups.items():
+            if not group.parent_group_id:
+                self._generate_group_recursive(lines, group, group_hierarchy, indent=0)
+
+        # Generate elements not belonging to any group
+        ungrouped_elements = [elem for elem in self.elements.values()
+                            if not elem.group_id and self._should_include_element(elem)]
+
+        if ungrouped_elements:
+            for element in ungrouped_elements:
+                plantuml_code = element.to_plantuml(show_element_type=self.layout.show_element_types, show_documentation=self.layout.show_documentation)
+                lines.extend(plantuml_code.split('\n'))
+
+                # Add hide command if element should be hidden
+                if self._should_hide_element(element):
+                    lines.append(f"hide {element.id}")
+
+    def _build_group_hierarchy(self) -> Dict[str, List[str]]:
+        """Build a hierarchy map of parent -> children groups.
+
+        Returns:
+            Dictionary mapping parent group IDs to lists of child group IDs
+        """
+        hierarchy = {}
+        for group in self.groups.values():
+            if group.parent_group_id:
+                if group.parent_group_id not in hierarchy:
+                    hierarchy[group.parent_group_id] = []
+                hierarchy[group.parent_group_id].append(group.id)
+        return hierarchy
+
+    def _generate_group_recursive(self, lines: List[str], group: ArchiMateGroup,
+                                hierarchy: Dict[str, List[str]], indent: int = 0) -> None:
+        """Recursively generate a group and its nested subgroups.
+
+        Args:
+            lines: List to append PlantUML lines to
+            group: The group to generate
+            hierarchy: Group hierarchy map
+            indent: Current indentation level
+        """
+        # Generate group opening
+        group_start = group.to_plantuml(indent)
+        lines.append(group_start)
+
+        # Generate child groups recursively
+        child_groups = hierarchy.get(group.id, [])
+        for child_group_id in child_groups:
+            child_group = self.groups[child_group_id]
+            self._generate_group_recursive(lines, child_group, hierarchy, indent + 1)
+
+        # Generate elements in this group
+        group_elements = [elem for elem in self.elements.values()
+                         if elem.group_id == group.id and self._should_include_element(elem)]
+
+        if group_elements:
+            for element in group_elements:
+                plantuml_code = element.to_plantuml(
+                    show_element_type=self.layout.show_element_types,
+                    show_documentation=self.layout.show_documentation
+                )
+                # Add indentation to each line
+                for line in plantuml_code.split('\n'):
+                    if line.strip():  # Skip empty lines
+                        lines.append("  " * (indent + 1) + line)
+
+                # Add hide command if element should be hidden
+                if self._should_hide_element(element):
+                    lines.append("  " * (indent + 1) + f"hide {element.id}")
+
+        # Generate group closing
+        group_end = group.to_plantuml_end(indent)
+        lines.append(group_end)
+
     def _generate_elements_sequential(self, lines: List[str]) -> None:
         """Generate elements in sequential order."""
         lines.append("' Elements")

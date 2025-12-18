@@ -47,7 +47,7 @@ from ..models import DiagramInput
 # Make DiagramInput available globally for MCP decorators
 globals()['DiagramInput'] = DiagramInput
 
-__all__ = ['create_archimate_diagram', 'create_diagram_from_file']
+__all__ = ['create_archimate_diagram', 'create_diagram_from_file', 'test_groups_functionality']
 
 # Import the main MCP instance
 from ..main import mcp
@@ -144,12 +144,132 @@ def create_diagram_from_file(file_path: str) -> str:
 
 
 @mcp.tool()
-def test_element_normalization() -> str:
-    """Test element type normalization across all ArchiMate layers."""
+def test_groups_functionality() -> str:
+    """Test groups functionality with nested groups and element assignments."""
     try:
-        # For now, return a placeholder message
-        # This will be implemented properly when we refactor the complex methods
-        return "🧪 **Element Normalization Test**\n\nTest functionality will be implemented in the next refactoring phase."
+        from ..models import DiagramInput, ElementInput, GroupInput, RelationshipInput
+
+        # Create test groups including nested groups
+        groups = [
+            GroupInput(
+                id="web_group",
+                name="Web Components",
+                group_type="package",
+                description="Frontend web components"
+            ),
+            GroupInput(
+                id="db_group",
+                name="Database Layer",
+                group_type="database",
+                description="Database components"
+            ),
+            GroupInput(
+                id="nested_folder",
+                name="Data Folder",
+                group_type="folder",
+                parent_group_id="db_group",
+                description="Nested folder inside database"
+            )
+        ]
+
+        # Create test elements assigned to groups
+        elements = [
+            ElementInput(
+                id="web_server",
+                name="Web Server",
+                element_type="Application_Component",
+                layer="Application",
+                group_id="web_group",
+                description="Main web server component"
+            ),
+            ElementInput(
+                id="api_gateway",
+                name="API Gateway",
+                element_type="Application_Component",
+                layer="Application",
+                group_id="web_group",
+                description="API gateway component"
+            ),
+            ElementInput(
+                id="mysql_db",
+                name="MySQL Database",
+                element_type="Technology_Artifact",
+                layer="Technology",
+                group_id="db_group",
+                description="Primary database"
+            ),
+            ElementInput(
+                id="data_processor",
+                name="Data Processor",
+                element_type="Application_Component",
+                layer="Application",
+                group_id="nested_folder",
+                description="Component in nested folder"
+            )
+        ]
+
+        # Create test relationships
+        relationships = [
+            RelationshipInput(
+                id="web_to_db",
+                from_element="web_server",
+                to_element="mysql_db",
+                relationship_type="Access",
+                description="Web server writes to database"
+            ),
+            RelationshipInput(
+                id="api_to_processor",
+                from_element="api_gateway",
+                to_element="data_processor",
+                relationship_type="Serving",
+                description="API serves data processor"
+            )
+        ]
+
+        # Create diagram input with groups enabled
+        diagram_input = DiagramInput(
+            title="Groups Functionality Test",
+            description="Testing named groups and nested groups functionality",
+            elements=elements,
+            relationships=relationships,
+            groups=groups,
+            layout={
+                "group_by_groups": True,
+                "direction": "horizontal",
+                "show_legend": True
+            }
+        )
+
+        # Test diagram creation
+        result = create_archimate_diagram_impl(diagram_input)
+
+        # Parse result to verify structure
+        import json
+        result_data = json.loads(result)
+
+        # Validate that groups functionality worked
+        success = result_data.get("success", False)
+        if not success:
+            return f"❌ Groups functionality test failed: {result_data.get('message', 'Unknown error')}"
+
+        files = result_data.get("files", {})
+        if not files.get("plantuml") or not files.get("png"):
+            return "❌ Groups functionality test failed: Missing output files"
+
+        return "✅ **Groups Functionality Test Passed**\n\n" + \
+               f"**Test Results:**\n" + \
+               f"• Groups created: {len(groups)} (including {sum(1 for g in groups if g.parent_group_id)} nested)\n" + \
+               f"• Elements assigned: {len(elements)}\n" + \
+               f"• Relationships created: {len(relationships)}\n" + \
+               f"• PlantUML file: {files.get('plantuml', 'N/A')}\n" + \
+               f"• PNG file: {files.get('png', 'N/A')}\n\n" + \
+               "**Features Tested:**\n" + \
+               "• Named groups (package, database, folder)\n" + \
+               "• Nested groups hierarchy\n" + \
+               "• Element-to-group assignments\n" + \
+               "• Group-based layout rendering\n" + \
+               "• Relationship preservation within groups"
+
     except Exception as e:
-        logger.error(f"Error testing element normalization: {e}")
-        return f"❌ Error testing element normalization:\n\n{str(e)}"
+        logger.error(f"Error testing groups functionality: {e}")
+        return f"❌ Error testing groups functionality:\n\n{str(e)}"

@@ -50,6 +50,10 @@ def _configure_layout(diagram: DiagramInput, debug_log: list) -> DiagramLayout:
     # Get layout configuration
     layout_config = diagram.layout or {}
 
+    # Auto-enable group_by_groups if diagram contains groups
+    has_groups = len(diagram.groups) > 0
+    group_by_groups = layout_config.get("group_by_groups", has_groups)
+
     # Create layout object with defaults from environment
     layout = DiagramLayout(
         direction=get_layout_setting("ARCHI_MCP_DEFAULT_DIRECTION", layout_config.get("direction")),
@@ -58,7 +62,8 @@ def _configure_layout(diagram: DiagramInput, debug_log: list) -> DiagramLayout:
         group_by_layer=get_layout_setting("ARCHI_MCP_DEFAULT_GROUP_BY_LAYER", layout_config.get("group_by_layer")),
         spacing=get_layout_setting("ARCHI_MCP_DEFAULT_SPACING", layout_config.get("spacing")),
         show_element_types=get_layout_setting("ARCHI_MCP_DEFAULT_SHOW_ELEMENT_TYPES", layout_config.get("show_element_types")),
-        show_relationship_labels=get_layout_setting("ARCHI_MCP_DEFAULT_SHOW_RELATIONSHIP_LABELS", layout_config.get("show_relationship_labels"))
+        show_relationship_labels=get_layout_setting("ARCHI_MCP_DEFAULT_SHOW_RELATIONSHIP_LABELS", layout_config.get("show_relationship_labels")),
+        group_by_groups=group_by_groups
     )
 
     debug_log.append(f"Layout configuration: {layout.model_dump()}")
@@ -85,7 +90,8 @@ def _process_elements(generator: ArchiMateGenerator, diagram: DiagramInput, lang
                 element_type=element_data.element_type,
                 layer=layer,
                 aspect=aspect,
-                description=element_data.description
+                description=element_data.description,
+                group_id=element_data.group_id
             )
             generator.add_element(element)
             debug_log.append(f"Added element: {element.id} ({element.element_type})")
@@ -117,6 +123,30 @@ def _process_relationships(generator: ArchiMateGenerator, diagram: DiagramInput,
         except Exception as e:
             debug_log.append(f"Error adding relationship {rel_data.id}: {e}")
             raise ArchiMateError(f"Failed to add relationship {rel_data.id}: {e}")
+
+
+def _process_groups(generator: ArchiMateGenerator, diagram: DiagramInput, debug_log: list):
+    """Process and add groups to the generator."""
+    debug_log.append(f"Processing {len(diagram.groups)} groups")
+
+    from ..archimate.elements.base import ArchiMateGroup, ComponentGroupingStyle
+
+    for group_data in diagram.groups:
+        try:
+            # Create group from input data
+            group = ArchiMateGroup(
+                id=group_data.id,
+                name=group_data.name,
+                group_type=ComponentGroupingStyle(group_data.group_type),
+                parent_group_id=group_data.parent_group_id,
+                description=group_data.description,
+                properties=group_data.properties
+            )
+            generator.add_group(group)
+            debug_log.append(f"Added group: {group.id} ({group.group_type.value})")
+        except Exception as e:
+            debug_log.append(f"Error adding group {group_data.id}: {e}")
+            raise ArchiMateError(f"Failed to add group {group_data.id}: {e}")
 
 
 def _generate_and_validate_plantuml(generator: ArchiMateGenerator, title: str, description: str, debug_log: list) -> str:
@@ -386,8 +416,9 @@ def create_archimate_diagram_impl(diagram: DiagramInput) -> str:
         layout = _configure_layout(diagram, debug_log)
         generator.set_layout(layout)
 
-        # Process elements and relationships
+        # Process elements, groups and relationships
         _process_elements(generator, diagram, language, debug_log)
+        _process_groups(generator, diagram, debug_log)
         _process_relationships(generator, diagram, language, debug_log)
 
         # Generate and validate PlantUML

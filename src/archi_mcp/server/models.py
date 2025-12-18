@@ -15,6 +15,7 @@ class ElementInput(BaseModel):
     aspect: Optional[str] = Field(None, description="ArchiMate aspect (Active Structure, Passive Structure, Behavior)")
     description: Optional[str] = Field(None, description="Element description")
     stereotype: Optional[str] = Field(None, description="Element stereotype")
+    group_id: Optional[str] = Field(None, description="ID of the group this element belongs to")
     properties: Dict[str, Any] = Field(default_factory=dict, description="Additional properties")
 
     @model_validator(mode='after')
@@ -78,6 +79,27 @@ class RelationshipInput(BaseModel):
         return self
 
 
+class GroupInput(BaseModel):
+    """Input model for ArchiMate groups in MCP requests."""
+
+    id: str = Field(..., description="Unique identifier for the group")
+    name: str = Field(..., description="Display name of the group")
+    group_type: str = Field(..., description="Type of grouping construct (package, node, folder, frame, cloud, database, rectangle)")
+    parent_group_id: Optional[str] = Field(None, description="ID of parent group for nested groups")
+    description: Optional[str] = Field(None, description="Group description")
+    properties: Dict[str, Any] = Field(default_factory=dict, description="Additional properties")
+
+    @model_validator(mode='after')
+    def validate_group_type(self) -> 'GroupInput':
+        """Validate group type."""
+        valid_types = {"package", "node", "folder", "frame", "cloud", "database", "rectangle"}
+
+        if self.group_type not in valid_types:
+            raise ValueError(f"Invalid group type '{self.group_type}'. Valid types: {valid_types}")
+
+        return self
+
+
 class DiagramInput(BaseModel):
     """Input model for complete ArchiMate diagrams in MCP requests."""
 
@@ -85,17 +107,30 @@ class DiagramInput(BaseModel):
     description: Optional[str] = Field(None, description="Diagram description")
     elements: List[ElementInput] = Field(default_factory=list, description="List of elements in the diagram")
     relationships: List[RelationshipInput] = Field(default_factory=list, description="List of relationships in the diagram")
+    groups: List[GroupInput] = Field(default_factory=list, description="List of named groups in the diagram")
     layout: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Layout configuration")
 
     @model_validator(mode='after')
     def validate_diagram_integrity(self) -> 'DiagramInput':
-        """Validate diagram integrity - ensure all referenced elements exist."""
+        """Validate diagram integrity - ensure all referenced elements and groups exist."""
         element_ids = {elem.id for elem in self.elements}
+        group_ids = {group.id for group in self.groups}
 
+        # Validate relationships reference existing elements
         for rel in self.relationships:
             if rel.from_element not in element_ids:
                 raise ValueError(f"Relationship '{rel.id}' references unknown source element '{rel.from_element}'")
             if rel.to_element not in element_ids:
                 raise ValueError(f"Relationship '{rel.id}' references unknown target element '{rel.to_element}'")
+
+        # Validate elements reference existing groups
+        for elem in self.elements:
+            if elem.group_id and elem.group_id not in group_ids:
+                raise ValueError(f"Element '{elem.id}' references unknown group '{elem.group_id}'")
+
+        # Validate groups reference existing parent groups
+        for group in self.groups:
+            if group.parent_group_id and group.parent_group_id not in group_ids:
+                raise ValueError(f"Group '{group.id}' references unknown parent group '{group.parent_group_id}'")
 
         return self
