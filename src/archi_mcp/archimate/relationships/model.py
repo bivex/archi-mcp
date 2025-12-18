@@ -111,7 +111,7 @@ class ArchiMateRelationship(BaseModel):
             final_arrow = final_arrow.replace("--", "-")
         elif self.orientation == "dot":
             # Convert to dot notation
-            final_arrow = final_arrow.replace("-->", ".").replace("--", ".").replace("..", ".")
+            final_arrow = final_arrow.replace("-->", ".").replace("--", ".").replace("..", ".").replace("~>", ".>")
 
         # Apply line style modifications
         if self.line_style == "dashed":
@@ -123,7 +123,7 @@ class ArchiMateRelationship(BaseModel):
 
         # Handle direction modifications
         if self.direction:
-            # Apply directional hints with comprehensive PlantUML syntax support
+            # Apply directional hints with precise PlantUML syntax support
             direction_map = {
                 RelationshipDirection.UP: "up",
                 RelationshipDirection.DOWN: "down",
@@ -137,26 +137,110 @@ class ArchiMateRelationship(BaseModel):
 
             direction = direction_map.get(self.direction)
             if direction:
-                # Handle different arrow styles comprehensively
-                final_arrow = final_arrow.replace("-->", f"-{direction}->")
-                final_arrow = final_arrow.replace("..>", f"-{direction}.>")
-                final_arrow = final_arrow.replace("<--", f"<{direction}-")
-                final_arrow = final_arrow.replace("<..", f"<{direction}.")
-                final_arrow = final_arrow.replace("<-->", f"<{direction}-{direction}>")
-                final_arrow = final_arrow.replace("*-->", f"*-{direction}->")
-                final_arrow = final_arrow.replace("o-->", f"o-{direction}->")
-                final_arrow = final_arrow.replace("--*", f"-{direction}-*")
-                final_arrow = final_arrow.replace("*--", f"*-{direction}-")
-                final_arrow = final_arrow.replace("--(", f"-{direction}-(")
-                final_arrow = final_arrow.replace(")--", f")-{direction}-")
-                final_arrow = final_arrow.replace("-->>", f"-{direction}->>")
-                final_arrow = final_arrow.replace("<<--", f"<<{direction}-")
-                final_arrow = final_arrow.replace("<<-->>", f"<<{direction}-{direction}>>")
-                final_arrow = final_arrow.replace("..>>", f".{direction}.>>")
-                final_arrow = final_arrow.replace("~>", f"~{direction}>")
-                final_arrow = final_arrow.replace("->>", f"-{direction}>>")
-                final_arrow = final_arrow.replace("--|>", f"-{direction}-|>")
-                final_arrow = final_arrow.replace("..|>", f".{direction}.|>")
+                # Apply direction to arrow components precisely, avoiding duplication
+                # Split arrow into components and apply direction to each applicable part
+
+                # Handle bidirectional arrows (<<-->>)
+                if "<<-->>" in final_arrow:
+                    final_arrow = final_arrow.replace("<<-->>", f"<<{direction}-{direction}>>")
+                elif "<<->>" in final_arrow:
+                    final_arrow = final_arrow.replace("<<->>", f"<<{direction}-{direction}>>")
+
+                # Handle bidirectional solid arrows (<-->)
+                elif "<-->" in final_arrow:
+                    final_arrow = final_arrow.replace("<-->", f"<{direction}-{direction}>")
+                elif "<->" in final_arrow:
+                    final_arrow = final_arrow.replace("<->", f"<{direction}-{direction}>")
+
+                # Handle access read arrows (-->>)
+                elif "-->>" in final_arrow:
+                    final_arrow = final_arrow.replace("-->>", f"-{direction}->>")
+                elif "->>" in final_arrow:
+                    final_arrow = final_arrow.replace("->>", f"-{direction}>>")
+
+                # Handle influence arrows (..>>)
+                elif "..>>" in final_arrow:
+                    final_arrow = final_arrow.replace("..>>", f".{direction}.>>")
+                elif ".>>" in final_arrow:
+                    final_arrow = final_arrow.replace(".>>", f".{direction}.>>")
+
+                # Handle specialization arrows (--|>)
+                elif "--|>" in final_arrow:
+                    final_arrow = final_arrow.replace("--|>", f"-{direction}-|>")
+                elif "-|>" in final_arrow:
+                    final_arrow = final_arrow.replace("-|>", f"-{direction}-|>")
+
+                # Handle realization arrows (..|>)
+                elif "..|>" in final_arrow:
+                    final_arrow = final_arrow.replace("..|>", f".{direction}.|>")
+                elif ".|>" in final_arrow:
+                    final_arrow = final_arrow.replace(".|>", f".{direction}.|>")
+
+                # Handle serving arrows (--()
+                elif "--(" in final_arrow:
+                    final_arrow = final_arrow.replace("--(", f"-{direction}-(")
+                elif "-(" in final_arrow:
+                    final_arrow = final_arrow.replace("-(", f"-{direction}-(")
+
+                # Handle reverse serving arrows )--
+                elif ")--" in final_arrow:
+                    final_arrow = final_arrow.replace(")--", f")-{direction}-")
+                elif ")-" in final_arrow:
+                    final_arrow = final_arrow.replace(")-", f")-{direction}-")
+
+                # Handle access write arrows (<<--)
+                elif "<<--" in final_arrow:
+                    final_arrow = final_arrow.replace("<<--", f"<<{direction}-")
+                elif "<<-" in final_arrow:
+                    final_arrow = final_arrow.replace("<<-", f"<<{direction}-")
+
+                # Handle composition arrows (*-->)
+                elif "*-->" in final_arrow:
+                    final_arrow = final_arrow.replace("*-->", f"*-{direction}->")
+                elif "*->" in final_arrow:
+                    final_arrow = final_arrow.replace("*->", f"*-{direction}->")
+
+                # Handle aggregation arrows (o-->)
+                elif "o-->" in final_arrow:
+                    final_arrow = final_arrow.replace("o-->", f"o-{direction}->")
+                elif "o->" in final_arrow:
+                    final_arrow = final_arrow.replace("o->", f"o-{direction}->")
+
+                # Handle assignment arrows (--*)
+                elif "--*" in final_arrow:
+                    final_arrow = final_arrow.replace("--*", f"-{direction}-*")
+                elif "-*" in final_arrow:
+                    final_arrow = final_arrow.replace("-*", f"-{direction}-*")
+
+                # Handle reverse assignment arrows (*--)
+                elif "*--" in final_arrow:
+                    final_arrow = final_arrow.replace("*--", f"*-{direction}-")
+                elif "*-" in final_arrow:
+                    final_arrow = final_arrow.replace("*-", f"*-{direction}-")
+
+                # Handle reverse solid arrows (<--)
+                elif "<--" in final_arrow:
+                    final_arrow = final_arrow.replace("<--", f"<{direction}-")
+                elif "<-" in final_arrow:
+                    final_arrow = final_arrow.replace("<-", f"<{direction}-")
+
+                # Handle reverse dashed arrows (<..)
+                elif "<.." in final_arrow:
+                    final_arrow = final_arrow.replace("<..", f"<{direction}.")
+                elif "<." in final_arrow:
+                    final_arrow = final_arrow.replace("<.", f"<{direction}.")
+
+                # Handle standard solid arrows (-->)
+                elif "-->" in final_arrow:
+                    final_arrow = final_arrow.replace("-->", f"-{direction}->")
+
+                # Handle standard dashed arrows (..>)
+                elif "..>" in final_arrow:
+                    final_arrow = final_arrow.replace("..>", f".{direction}.>")
+
+                # Handle flow arrows (~>)
+                elif "~>" in final_arrow:
+                    final_arrow = final_arrow.replace("~>", f"~{direction}>")
 
         # Determine relationship label
         label = ""

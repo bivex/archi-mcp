@@ -360,18 +360,16 @@ class TestArchiMateRelationship:
 
     def test_plantuml_horizontal_single_dash(self):
         """Test PlantUML horizontal links with single dash."""
-        # This tests if we can generate single-dash arrows instead of double-dash
         relationship = ArchiMateRelationship(
             id="single_dash_test",
             from_element="Component",
             to_element="Interface",
-            relationship_type=RelationshipType.SERVING
+            relationship_type=RelationshipType.SERVING,
+            orientation="horizontal"
         )
 
         plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
-        # Currently generates --(, but we want to test single dash alternative
-        # This might need new functionality
-        expected = '"Component" --( "Interface"'
+        expected = '"Component" -( "Interface"'
         assert plantuml == expected
 
     def test_plantuml_horizontal_dot_link(self):
@@ -380,11 +378,41 @@ class TestArchiMateRelationship:
             id="dot_link_test",
             from_element="Component",
             to_element="Interface2",
-            relationship_type=RelationshipType.SERVING
+            relationship_type=RelationshipType.SERVING,
+            orientation="dot"
         )
 
         plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
-        expected = '"Component" --( "Interface2"'
+        expected = '"Component" .( "Interface2"'
+        assert plantuml == expected
+
+    def test_plantuml_horizontal_with_direction(self):
+        """Test PlantUML horizontal arrows with direction."""
+        relationship = ArchiMateRelationship(
+            id="horizontal_dir_test",
+            from_element="A",
+            to_element="B",
+            relationship_type=RelationshipType.ASSOCIATION,
+            orientation="horizontal",
+            direction=RelationshipDirection.RIGHT
+        )
+
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        expected = '"A" -> "B"'  # Horizontal orientation takes precedence, no direction applied
+        assert plantuml == expected
+
+    def test_plantuml_dot_orientation(self):
+        """Test PlantUML dot orientation arrows."""
+        relationship = ArchiMateRelationship(
+            id="dot_test",
+            from_element="X",
+            to_element="Y",
+            relationship_type=RelationshipType.ASSOCIATION,
+            orientation="dot"
+        )
+
+        plantuml = relationship.to_plantuml(show_labels=False, use_arrow_styles=True)
+        expected = '"X" . "Y"'
         assert plantuml == expected
 
     def test_plantuml_legacy_format_with_new_features(self):
