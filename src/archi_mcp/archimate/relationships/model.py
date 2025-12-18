@@ -122,7 +122,7 @@ class ArchiMateRelationship(BaseModel):
             final_arrow = final_arrow.replace("--", "-.").replace("..", "-.")
 
         # Handle direction modifications
-        if self.direction:
+        if self.direction and self.orientation != "horizontal":
             # Apply directional hints with precise PlantUML syntax support
             direction_map = {
                 RelationshipDirection.UP: "up",

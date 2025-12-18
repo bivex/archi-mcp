@@ -4,7 +4,7 @@ import pytest
 from pathlib import Path
 import tempfile
 from archi_mcp.archimate.generator import ArchiMateGenerator, DiagramLayout
-from archi_mcp.archimate.elements.base import ArchiMateElement, ArchiMateLayer, ArchiMateAspect
+from archi_mcp.archimate.elements.base import ArchiMateElement, ArchiMateLayer, ArchiMateAspect, ComponentPort, PortDirection
 from archi_mcp.archimate.relationships import ArchiMateRelationship
 from archi_mcp.archimate.relationships.types import ArchiMateRelationshipType
 from archi_mcp.utils.exceptions import ArchiMateGenerationError
@@ -342,14 +342,20 @@ class TestArchiMateGenerator:
 class TestDiagramLayout:
     """Test diagram layout configuration."""
 
-    def create_test_element(self, id_suffix="1"):
+    def create_test_element(self, id_suffix="1", tags=None, ports=None):
         """Create a test element."""
+        if tags is None:
+            tags = []
+        if ports is None:
+            ports = []
         return ArchiMateElement(
             id=f"test_element_{id_suffix}",
             name=f"Test Element {id_suffix}",
             element_type="Business_Service",
             layer=ArchiMateLayer.BUSINESS,
-            aspect=ArchiMateAspect.BEHAVIOR
+            aspect=ArchiMateAspect.BEHAVIOR,
+            tags=tags,
+            ports=ports
         )
 
     def create_test_relationship(self, from_id, to_id, rel_id="1"):
@@ -619,3 +625,222 @@ multiline descriptions"""
         plantuml_shown = generator.generate_plantuml()
         assert f"hide {element3.id}" not in plantuml_shown
         assert '"Test Element 3"' in plantuml_shown
+
+    def test_hide_tags(self):
+        """Test hiding components with specific tags."""
+        generator = ArchiMateGenerator()
+
+        element1 = self.create_test_element("1", ["$tag13"])
+        element2 = self.create_test_element("2")
+        element3 = self.create_test_element("3", ["$tag13"])
+
+        generator.add_element(element1)
+        generator.add_element(element2)
+        generator.add_element(element3)
+
+        # Hide $tag13 tagged elements
+        generator.hide_tags(["$tag13"])
+        plantuml = generator.generate_plantuml()
+
+        # Elements with $tag13 should be hidden individually
+        assert f"hide {element1.id}" in plantuml
+        assert f"hide {element3.id}" in plantuml
+        # Element without tag should be visible
+        assert '"Test Element 2"' in plantuml
+
+    def test_remove_tags(self):
+        """Test removing components with specific tags."""
+        generator = ArchiMateGenerator()
+
+        element1 = self.create_test_element("1", ["$tag13"])
+        element2 = self.create_test_element("2")
+        element3 = self.create_test_element("3", ["$tag13"])
+
+        generator.add_element(element1)
+        generator.add_element(element2)
+        generator.add_element(element3)
+
+        # Remove $tag13 tagged elements
+        generator.remove_tags(["$tag13"])
+        plantuml = generator.generate_plantuml()
+
+        # Elements with $tag13 should not appear in the diagram
+        assert element1.id not in plantuml
+        assert element3.id not in plantuml
+        # Element without tag should be visible
+        assert '"Test Element 2"' in plantuml
+        # Should contain remove directive
+
+    def test_restore_tags(self):
+        """Test restoring components with specific tags."""
+        generator = ArchiMateGenerator()
+
+        element1 = self.create_test_element("1", ["$tag13", "$tag1"])
+        element2 = self.create_test_element("2")
+        element3 = self.create_test_element("3", ["$tag13"])
+
+        generator.add_element(element1)
+        generator.add_element(element2)
+        generator.add_element(element3)
+
+        # First remove $tag13 tagged elements
+        generator.remove_tags(["$tag13"])
+        plantuml_removed = generator.generate_plantuml()
+        assert element1.id not in plantuml_removed
+        assert element3.id not in plantuml_removed
+
+        # Then restore $tag1 tagged elements (which should restore element1)
+        generator.restore_tags(["$tag1"])
+        plantuml_restored = generator.generate_plantuml()
+
+        # Element1 should be back (has both $tag13 and $tag1)
+        assert '"Test Element 1"' in plantuml_restored
+        # Element3 should still be removed (only has $tag13)
+        assert element3.id not in plantuml_restored
+
+    def test_remove_wildcard_restore_tags(self):
+        """Test removing all (*) and restoring specific tags."""
+        generator = ArchiMateGenerator()
+
+        element1 = self.create_test_element("1", ["$tag13", "$tag1"])
+        element2 = self.create_test_element("2")
+        element3 = self.create_test_element("3", ["$tag13"])
+
+        generator.add_element(element1)
+        generator.add_element(element2)
+        generator.add_element(element3)
+
+        # Remove all elements with any tag
+        generator.remove_tags(["*"])
+        plantuml_removed = generator.generate_plantuml()
+        assert element1.id not in plantuml_removed
+        assert element3.id not in plantuml_removed
+        # Element without any tags should still be visible
+        assert '"Test Element 2"' in plantuml_removed
+
+        # Then restore $tag1 tagged elements
+        generator.restore_tags(["$tag1"])
+        plantuml_restored = generator.generate_plantuml()
+
+        # Element1 should be back (has $tag1)
+        assert '"Test Element 1"' in plantuml_restored
+        # Element3 should still be removed (no $tag1)
+        assert element3.id not in plantuml_restored
+
+    def test_component_ports(self):
+        """Test component with bidirectional ports."""
+        generator = ArchiMateGenerator()
+
+        ports = [
+            ComponentPort(id="p1", name="Port 1", direction=PortDirection.BIDIRECTIONAL),
+            ComponentPort(id="p2", name="Port 2", direction=PortDirection.BIDIRECTIONAL),
+            ComponentPort(id="p3", name="Port 3", direction=PortDirection.BIDIRECTIONAL),
+        ]
+
+        element = self.create_test_element("1", ports=ports)
+        generator.add_element(element)
+
+        plantuml = generator.generate_plantuml()
+
+        # Should contain port definitions
+        assert "port p1" in plantuml
+        assert "port p2" in plantuml
+        assert "port p3" in plantuml
+        # Should contain component with ports
+        assert "component test_element_1 {" in plantuml
+
+    def test_component_portin_ports(self):
+        """Test component with input ports."""
+        generator = ArchiMateGenerator()
+
+        ports = [
+            ComponentPort(id="p1", name="Input Port 1", direction=PortDirection.INPUT),
+            ComponentPort(id="p2", name="Input Port 2", direction=PortDirection.INPUT),
+            ComponentPort(id="p3", name="Input Port 3", direction=PortDirection.INPUT),
+        ]
+
+        element = self.create_test_element("1", ports=ports)
+        generator.add_element(element)
+
+        plantuml = generator.generate_plantuml()
+
+        # Should contain portin definitions
+        assert "portin p1" in plantuml
+        assert "portin p2" in plantuml
+        assert "portin p3" in plantuml
+
+    def test_component_portout_ports(self):
+        """Test component with output ports."""
+        generator = ArchiMateGenerator()
+
+        ports = [
+            ComponentPort(id="p1", name="Output Port 1", direction=PortDirection.OUTPUT),
+            ComponentPort(id="p2", name="Output Port 2", direction=PortDirection.OUTPUT),
+            ComponentPort(id="p3", name="Output Port 3", direction=PortDirection.OUTPUT),
+        ]
+
+        element = self.create_test_element("1", ports=ports)
+        generator.add_element(element)
+
+        plantuml = generator.generate_plantuml()
+
+        # Should contain portout definitions
+        assert "portout p1" in plantuml
+        assert "portout p2" in plantuml
+        assert "portout p3" in plantuml
+
+    def test_component_mixed_ports(self):
+        """Test component with mixed port types."""
+        generator = ArchiMateGenerator()
+
+        ports = [
+            ComponentPort(id="p1", name="Input 1", direction=PortDirection.INPUT),
+            ComponentPort(id="p2", name="Input 2", direction=PortDirection.INPUT),
+            ComponentPort(id="p3", name="Input 3", direction=PortDirection.INPUT),
+            ComponentPort(id="po1", name="Output 1", direction=PortDirection.OUTPUT),
+            ComponentPort(id="po2", name="Output 2", direction=PortDirection.OUTPUT),
+            ComponentPort(id="po3", name="Output 3", direction=PortDirection.OUTPUT),
+        ]
+
+        element = self.create_test_element("1", ports=ports)
+        generator.add_element(element)
+
+        plantuml = generator.generate_plantuml()
+
+        # Should contain both portin and portout definitions
+        assert "portin p1" in plantuml
+        assert "portin p2" in plantuml
+        assert "portin p3" in plantuml
+        assert "portout po1" in plantuml
+        assert "portout po2" in plantuml
+        assert "portout po3" in plantuml
+
+    def test_component_ports_with_interface_types(self):
+        """Test component ports with interface types and descriptions."""
+        generator = ArchiMateGenerator()
+
+        ports = [
+            ComponentPort(
+                id="http_port",
+                name="HTTP API",
+                direction=PortDirection.INPUT,
+                interface_type="REST",
+                description="REST API endpoint"
+            ),
+            ComponentPort(
+                id="db_port",
+                name="Database Connection",
+                direction=PortDirection.BIDIRECTIONAL,
+                interface_type="JDBC",
+                description="Database connectivity"
+            ),
+        ]
+
+        element = self.create_test_element("1", ports=ports)
+        generator.add_element(element)
+
+        plantuml = generator.generate_plantuml()
+
+        # Should contain port definitions with interface types and descriptions
+        assert "portin http_port [[HTTP API (REST)\\nREST API endpoint]]" in plantuml
+        assert "port db_port [[Database Connection (JDBC)\\nDatabase connectivity]]" in plantuml

@@ -70,6 +70,7 @@ class ArchiMateGenerator:
         self.removed_elements: set = set()  # Elements to remove by ID
         self.hidden_tags: set = set()  # Tags to hide (e.g., $tag)
         self.removed_tags: set = set()  # Tags to remove (e.g., $tag)
+        self.restored_tags: set = set()  # Tags that have been restored (e.g., $tag)
         self.hide_unlinked: bool = False  # Hide elements without relationships
         self.remove_unlinked: bool = False  # Remove elements without relationships
         self.layout: DiagramLayout = DiagramLayout()
@@ -167,6 +168,7 @@ class ArchiMateGenerator:
         Args:
             tags: List of tags to restore
         """
+        self.restored_tags.update(tags)
         self.hidden_tags.difference_update(tags)
         self.removed_tags.difference_update(tags)
 
@@ -455,7 +457,10 @@ class ArchiMateGenerator:
             return False
 
         # Check if element has tags that are removed
-        if any(tag in self.removed_tags for tag in element.tags):
+        # Special handling for wildcard "*" - removes all elements with any tags
+        if "*" in self.removed_tags and element.tags and not any(tag in self.restored_tags for tag in element.tags):
+            return False
+        elif any(tag in self.removed_tags for tag in element.tags) and not any(tag in self.restored_tags for tag in element.tags):
             return False
 
         # Check if unlinked elements should be removed
@@ -472,8 +477,8 @@ class ArchiMateGenerator:
         if element.id in self.hidden_elements:
             return True
 
-        # Check if element has tags that are hidden
-        if any(tag in self.hidden_tags for tag in element.tags):
+        # Check if element has tags that are hidden and not restored
+        if any(tag in self.hidden_tags for tag in element.tags) and not any(tag in self.restored_tags for tag in element.tags):
             return True
 
         # Check if unlinked elements should be hidden
@@ -512,6 +517,7 @@ class ArchiMateGenerator:
         self.removed_elements.clear()
         self.hidden_tags.clear()
         self.removed_tags.clear()
+        self.restored_tags.clear()
         self.hide_unlinked = False
         self.remove_unlinked = False
     
