@@ -13,7 +13,6 @@
 
 """Core diagram processing engine for ArchiMate MCP server."""
 
-# VERIFIED ✅ - PlantUML validation implemented
 
 import os
 import json
@@ -34,6 +33,7 @@ from ..i18n import ArchiMateTranslator
 from ..archimate import ArchiMateGenerator, ArchiMateValidator
 from ..archimate.generator import DiagramLayout
 from .models import DiagramInput
+from .response_models import DiagramGenerationResponse, DiagramFiles, FileLoadResponse
 from .config import get_layout_setting
 from .language import detect_language_from_content, translate_relationship_labels
 from .plantuml_validator import validate_plantuml_renders, validate_png_file, find_plantuml_jar, setup_java_environment
@@ -304,26 +304,21 @@ def _export_diagram_files(plantuml_code: str, png_file_path: str, svg_file_path:
 
 def _generate_success_response(export_dir: Path, svg_generated: bool,
                               puml_path: str, png_path: str, svg_path: str = None,
-                              debug_log: list = None) -> str:
+                              debug_log: list = None) -> DiagramGenerationResponse:
     """Generate success response with file information."""
-    response = {
-        "success": True,
-        "message": "ArchiMate diagram generated successfully",
-        "export_directory": str(export_dir),
-        "files": {
-            "plantuml": puml_path,
-            "png": png_path
-        }
-    }
+    files = DiagramFiles(
+        plantuml=puml_path,
+        png=png_path,
+        svg=svg_path if svg_generated and svg_path else None
+    )
 
-    if svg_generated and svg_path:
-        response["files"]["svg"] = svg_path
-
-    # Add debug information if available
-    if debug_log:
-        response["debug_log"] = debug_log
-
-    return json.dumps(response, indent=2, ensure_ascii=False)
+    return DiagramGenerationResponse(
+        success=True,
+        message="ArchiMate diagram generated successfully",
+        export_directory=str(export_dir),
+        files=files,
+        debug_log=debug_log if debug_log else None
+    )
 
 
 def save_debug_log(export_dir: Path, log_entries: List[Dict[str, Any]]) -> Path:
@@ -357,7 +352,7 @@ def _save_failed_attempt(plantuml_code: str, diagram_input: DiagramInput, debug_
         logger.warning(f"Could not save debug log: {log_error}")
 
 
-def create_archimate_diagram_impl(diagram: DiagramInput) -> str:
+def create_archimate_diagram_impl(diagram: DiagramInput) -> DiagramGenerationResponse:
     """Generate production-ready ArchiMate diagrams with comprehensive styling and layout options.
 
     This is the main MCP tool for creating ArchiMate diagrams. It provides extensive capabilities
@@ -416,7 +411,7 @@ def create_archimate_diagram_impl(diagram: DiagramInput) -> str:
                  This includes elements, relationships, layout, and output configurations.
 
     Returns:
-        A JSON string containing the generated PlantUML code and paths to exported images (PNG, SVG).
+        A DiagramGenerationResponse object containing the generated PlantUML code and paths to exported images (PNG, SVG).
 
     Raises:
         ArchiMateError: If diagram generation or validation fails.
@@ -498,7 +493,7 @@ def create_archimate_diagram_impl(diagram: DiagramInput) -> str:
         raise ArchiMateError(enhanced_error)
 
 
-def load_diagram_from_file_impl(file_path: str) -> str:
+def load_diagram_from_file_impl(file_path: str) -> DiagramGenerationResponse:
     """Implementation of load diagram from file."""
     try:
         from pathlib import Path
