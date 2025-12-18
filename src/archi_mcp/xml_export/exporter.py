@@ -519,8 +519,8 @@ class ArchiMateXMLExporter:
         source_connection.set("archimateRelationship", relationship.id)
         
         # Add connection routing for better visual clarity
-        source_pos = element_positions.get(elements[source_idx].id, {"x": 50, "y": 50})
-        target_pos = element_positions.get(elements[target_idx].id, {"x": 50, "y": 50})
+        source_pos = element_positions.get(relationship.from_element, {"x": 50, "y": 50})
+        target_pos = element_positions.get(relationship.to_element, {"x": 50, "y": 50})
         
         # Add bendpoints for cross-layer connections to avoid overlap
         if abs(source_pos["y"] - target_pos["y"]) > LAYER_THRESHOLD_Y:  # Different layers
