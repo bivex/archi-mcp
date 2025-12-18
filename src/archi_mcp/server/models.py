@@ -1,5 +1,6 @@
 """MCP server models and data structures."""
 
+import uuid
 from pydantic import BaseModel, Field, model_validator
 from typing import Any, Dict, List, Optional, Literal, Union
 
@@ -41,6 +42,24 @@ class RelationshipInput(BaseModel):
     direction: Optional[str] = Field(None, description="Optional direction (Up, Down, Left, Right)")
     description: Optional[str] = Field(None, description="Relationship description")
     label: Optional[str] = Field(None, description="Custom relationship label")
+
+    @model_validator(mode='before')
+    @classmethod
+    def validate_and_normalize_relationship_input(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            # Map 'source' to 'from_element'
+            if 'source' in data and 'from_element' not in data:
+                data['from_element'] = data.pop('source')
+            # Map 'target' to 'to_element'
+            if 'target' in data and 'to_element' not in data:
+                data['to_element'] = data.pop('target')
+            # Map 'type' to 'relationship_type'
+            if 'type' in data and 'relationship_type' not in data:
+                data['relationship_type'] = data.pop('type')
+            # Generate a unique ID if not provided
+            if 'id' not in data or not data['id']:
+                data['id'] = str(uuid.uuid4())
+        return data
 
     @model_validator(mode='after')
     def validate_relationship_type(self) -> 'RelationshipInput':

@@ -101,16 +101,18 @@ class ArchiMateRelationship(BaseModel):
             # Use default style based on relationship type
             arrow_style = RELATIONSHIP_ARROW_STYLES.get(self.relationship_type, ArrowStyle.SOLID)
 
+        # Start with the arrow style value as a string for modifications
+        final_arrow = arrow_style.value
+
         # Apply line style modifications
         if self.line_style == "dashed":
             # Convert solid arrows to dashed
-            arrow_style = ArrowStyle(str(arrow_style.value).replace("--", ".."))
+            final_arrow = final_arrow.replace("--", "..")
         elif self.line_style == "dotted":
             # Convert to dotted (using PlantUML dotted syntax)
-            arrow_style = ArrowStyle(str(arrow_style.value).replace("--", "-.").replace("..", "-."))
+            final_arrow = final_arrow.replace("--", "-.").replace("..", "-.")
 
         # Handle direction modifications
-        final_arrow = arrow_style.value
         if self.direction:
             # Apply directional hints with comprehensive PlantUML syntax support
             direction_map = {
@@ -160,7 +162,7 @@ class ArchiMateRelationship(BaseModel):
         # Add color if specified
         color_str = ""
         if self.color:
-            color_str = f" #{self.color}"
+            color_str = f" {self.color}"
 
         # Add length modifier if specified
         length_str = ""
