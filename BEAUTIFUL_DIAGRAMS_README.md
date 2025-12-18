@@ -273,3 +273,4 @@ print(f"PNG saved to: {png_path}")
 
 *Generated with ❤️ using enhanced ArchiMate diagram generation*</contents>
 </xai:function_call">BEAUTIFUL_DIAGRAMS_README.md
+
