@@ -79,62 +79,104 @@ def _auto_fix_json(json_string: str) -> Tuple[bool, str, str]:
     original = json_string
     fixes_applied = []
 
-    # Fix 0: CRITICAL - Replace single quotes with double quotes
-    # This is the most common error when copying Python dict strings
-    # Pattern: 'text' -> "text" (but preserve apostrophes in values)
-    if "'" in json_string:
-        json_string = json_string.replace("'", '"')
-        fixes_applied.append("Replaced single quotes with double quotes")
-
-    # Fix 1: Missing colons after property names
-    # Pattern: "name" "value" -> "name": "value"
-    pattern1 = r'("[\w_]+")(\s+)(")'
-    if re.search(pattern1, json_string):
-        json_string = re.sub(pattern1, r'\1:\3', json_string)
-        fixes_applied.append("Added missing colons after property names")
-
-    # Fix 2: Missing commas between properties (newline separated)
-    # Pattern: "value"\n  "next": -> "value",\n  "next":
-    pattern2 = r'("[^"]*"|\d+|true|false|null|\}|\])(\s*\n\s+)("[\w_]+":|{|"[\w_]+")'
-    if re.search(pattern2, json_string):
-        json_string = re.sub(pattern2, r'\1,\2\3', json_string)
-        if "Added missing commas" not in fixes_applied:
-            fixes_applied.append("Added missing commas between properties")
-
-    # Fix 3: Missing commas in same line
-    # Pattern: } { -> }, {
-    pattern3 = r'(\}|\])(\s+)(\{|\[)'
-    if re.search(pattern3, json_string):
-        json_string = re.sub(pattern3, r'\1,\2\3', json_string)
-        if "Added missing commas" not in fixes_applied:
-            fixes_applied.append("Added missing commas between objects/arrays")
-
-    # Fix 4: Property names without quotes
-    # Pattern: {id: "value"} -> {"id": "value"}
-    pattern4 = r'([{\s,])(\w+)(:)'
-    if re.search(pattern4, json_string):
-        json_string = re.sub(pattern4, r'\1"\2"\3', json_string)
-        fixes_applied.append("Added quotes around property names")
-
-    # Fix 5: Remove trailing commas
-    # Pattern: "value",] or "value",} -> "value"]  or "value"}
-    pattern5 = r',(\s*[}\]])'
-    if re.search(pattern5, json_string):
-        json_string = re.sub(pattern5, r'\1', json_string)
-        fixes_applied.append("Removed trailing commas")
-
-    # Fix 6: Extra opening braces
-    # Pattern: {}\n  "id" -> {\n  "id"
-    pattern6 = r'\{\}(\s*\n\s*")'
-    if re.search(pattern6, json_string):
-        json_string = re.sub(pattern6, r'{\1', json_string)
-        fixes_applied.append("Removed extra braces")
+    # Identify and apply all fixes
+    json_string, fixes_applied = _apply_json_fixes(json_string, fixes_applied)
 
     if fixes_applied:
         fix_desc = "; ".join(fixes_applied)
         return True, json_string, fix_desc
 
     return False, original, ""
+
+
+def _apply_json_fixes(json_string: str, fixes_applied: list) -> Tuple[str, list]:
+    """Apply all JSON fixing patterns to the string."""
+    # Fix 0: CRITICAL - Replace single quotes with double quotes
+    json_string, fixes_applied = _fix_single_quotes(json_string, fixes_applied)
+
+    # Fix 1: Missing colons after property names
+    json_string, fixes_applied = _fix_missing_colons(json_string, fixes_applied)
+
+    # Fix 2: Missing commas between properties (newline separated)
+    json_string, fixes_applied = _fix_missing_commas_newlines(json_string, fixes_applied)
+
+    # Fix 3: Missing commas in same line
+    json_string, fixes_applied = _fix_missing_commas_inline(json_string, fixes_applied)
+
+    # Fix 4: Property names without quotes
+    json_string, fixes_applied = _fix_unquoted_properties(json_string, fixes_applied)
+
+    # Fix 5: Remove trailing commas
+    json_string, fixes_applied = _fix_trailing_commas(json_string, fixes_applied)
+
+    # Fix 6: Extra opening braces
+    json_string, fixes_applied = _fix_extra_braces(json_string, fixes_applied)
+
+    return json_string, fixes_applied
+
+
+def _fix_single_quotes(json_string: str, fixes_applied: list) -> Tuple[str, list]:
+    """Fix single quotes replaced with double quotes."""
+    if "'" in json_string:
+        json_string = json_string.replace("'", '"')
+        fixes_applied.append("Replaced single quotes with double quotes")
+    return json_string, fixes_applied
+
+
+def _fix_missing_colons(json_string: str, fixes_applied: list) -> Tuple[str, list]:
+    """Fix missing colons after property names."""
+    pattern = r'("[\w_]+")(\s+)(")'
+    if re.search(pattern, json_string):
+        json_string = re.sub(pattern, r'\1:\3', json_string)
+        fixes_applied.append("Added missing colons after property names")
+    return json_string, fixes_applied
+
+
+def _fix_missing_commas_newlines(json_string: str, fixes_applied: list) -> Tuple[str, list]:
+    """Fix missing commas between properties (newline separated)."""
+    pattern = r'("[^"]*"|\d+|true|false|null|\}|\])(\s*\n\s+)("[\w_]+":|{|"[\w_]+")'
+    if re.search(pattern, json_string):
+        json_string = re.sub(pattern, r'\1,\2\3', json_string)
+        if "Added missing commas" not in fixes_applied:
+            fixes_applied.append("Added missing commas between properties")
+    return json_string, fixes_applied
+
+
+def _fix_missing_commas_inline(json_string: str, fixes_applied: list) -> Tuple[str, list]:
+    """Fix missing commas in same line."""
+    pattern = r'(\}|\])(\s+)(\{|\[)'
+    if re.search(pattern, json_string):
+        json_string = re.sub(pattern, r'\1,\2\3', json_string)
+        if "Added missing commas" not in fixes_applied:
+            fixes_applied.append("Added missing commas between objects/arrays")
+    return json_string, fixes_applied
+
+
+def _fix_unquoted_properties(json_string: str, fixes_applied: list) -> Tuple[str, list]:
+    """Fix property names without quotes."""
+    pattern = r'([{\s,])(\w+)(:)'
+    if re.search(pattern, json_string):
+        json_string = re.sub(pattern, r'\1"\2"\3', json_string)
+        fixes_applied.append("Added quotes around property names")
+    return json_string, fixes_applied
+
+
+def _fix_trailing_commas(json_string: str, fixes_applied: list) -> Tuple[str, list]:
+    """Remove trailing commas."""
+    pattern = r',(\s*[}\]])'
+    if re.search(pattern, json_string):
+        json_string = re.sub(pattern, r'\1', json_string)
+        fixes_applied.append("Removed trailing commas")
+    return json_string, fixes_applied
+
+
+def _fix_extra_braces(json_string: str, fixes_applied: list) -> Tuple[str, list]:
+    """Remove extra opening braces."""
+    pattern = r'\{\}(\s*\n\s*")'
+    if re.search(pattern, json_string):
+        json_string = re.sub(pattern, r'{\1', json_string)
+        fixes_applied.append("Removed extra braces")
+    return json_string, fixes_applied
 
 
 def _format_json_error(
@@ -145,28 +187,48 @@ def _format_json_error(
     fix_description: str
 ) -> str:
     """Format a detailed JSON parsing error message."""
-    lines = original_json.split('\n')
-    error_line = lines[error.lineno - 1] if error.lineno <= len(lines) else "N/A"
-    error_col = error.colno if error.colno is not None else 0
+    error_details = _extract_error_details(original_json, error)
+    error_msg = _build_error_message(error, error_details, was_fixed, fixed_json, fix_description)
 
+    suggestions = _generate_error_suggestions(error.msg, original_json)
+    if suggestions:
+        error_msg += "\n\nSuggestions:\n" + "\n".join(f"• {s}" for s in suggestions)
+
+    return error_msg
+
+
+def _extract_error_details(original_json: str, error: json.JSONDecodeError) -> dict:
+    """Extract error details from the JSON error."""
+    lines = original_json.split('\n')
+    return {
+        'error_line': lines[error.lineno - 1] if error.lineno <= len(lines) else "N/A",
+        'error_col': error.colno if error.colno is not None else 0
+    }
+
+
+def _build_error_message(error: json.JSONDecodeError, error_details: dict, was_fixed: bool, fixed_json: str, fix_description: str) -> str:
+    """Build the main error message."""
     error_msg = "Invalid JSON string. JSON parsing failed: " + ".3f"
 
     if was_fixed:
         error_msg += f"\n\nAuto-fix attempted but still failed. Fixes applied: {fix_description}"
         error_msg += f"\nFixed JSON (still invalid):\n{fixed_json[:500]}{'...' if len(fixed_json) > 500 else ''}"
 
-    # Provide helpful suggestions
+    return error_msg
+
+
+def _generate_error_suggestions(error_msg: str, original_json: str) -> list:
+    """Generate helpful suggestions based on the error."""
     suggestions = []
-    if "Expecting ',' delimiter" in str(error.msg):
+    error_str = str(error_msg)
+
+    if "Expecting ',' delimiter" in error_str:
         suggestions.append("Check for missing commas between properties")
-    if "Expecting ':' delimiter" in str(error.msg):
+    if "Expecting ':' delimiter" in error_str:
         suggestions.append("Check for missing colons after property names")
-    if "Unterminated string" in str(error.msg):
+    if "Unterminated string" in error_str:
         suggestions.append("Check for unmatched quotes")
     if "'" in original_json:
         suggestions.append("Replace single quotes with double quotes")
 
-    if suggestions:
-        error_msg += "\n\nSuggestions:\n" + "\n".join(f"• {s}" for s in suggestions)
-
-    return error_msg
+    return suggestions

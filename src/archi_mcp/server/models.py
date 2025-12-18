@@ -75,36 +75,54 @@ class RelationshipInput(BaseModel):
     @classmethod
     def validate_and_normalize_relationship_input(cls, data: Any) -> Any:
         if isinstance(data, dict):
-            # Map 'source' to 'from_element'
-            if 'source' in data and 'from_element' not in data:
-                data['from_element'] = data.pop('source')
-            # Map 'target' to 'to_element'
-            if 'target' in data and 'to_element' not in data:
-                data['to_element'] = data.pop('target')
-            # Map 'type' to 'relationship_type'
-            if 'type' in data and 'relationship_type' not in data:
-                data['relationship_type'] = data.pop('type')
-            # Generate a unique ID if not provided
-            if 'id' not in data or not data['id']:
-                data['id'] = str(uuid.uuid4())
+            cls._normalize_element_ids(data)
+            cls._normalize_relationship_type(data)
+            cls._generate_unique_id(data)
         return data
+
+    @classmethod
+    def _normalize_element_ids(cls, data: dict) -> None:
+        """Normalize element ID field names from 'source'/'target' to 'from_element'/'to_element'."""
+        if 'source' in data and 'from_element' not in data:
+            data['from_element'] = data.pop('source')
+        if 'target' in data and 'to_element' not in data:
+            data['to_element'] = data.pop('target')
+
+    @classmethod
+    def _normalize_relationship_type(cls, data: dict) -> None:
+        """Normalize relationship type field name from 'type' to 'relationship_type'."""
+        if 'type' in data and 'relationship_type' not in data:
+            data['relationship_type'] = data.pop('type')
+
+    @classmethod
+    def _generate_unique_id(cls, data: dict) -> None:
+        """Generate a unique ID if not provided or empty."""
+        if 'id' not in data or not data['id']:
+            data['id'] = str(uuid.uuid4())
 
     @model_validator(mode='after')
     def validate_relationship_type(self) -> 'RelationshipInput':
-        """Validate relationship type. Auto-corrects case sensitivity."""
+        """Validate relationship type and related properties."""
+        self._validate_relationship_type_case()
+        self._validate_direction_case()
+        self._validate_additional_properties()
+        return self
+
+    def _validate_relationship_type_case(self) -> None:
+        """Validate and auto-correct relationship type case."""
         valid_types = {
             "Access", "Aggregation", "Assignment", "Association", "Composition",
             "Flow", "Influence", "Realization", "Serving", "Specialization", "Triggering"
         }
 
-        # Auto-correct relationship type case (case-insensitive matching)
         type_lower_map = {rtype.lower(): rtype for rtype in valid_types}
         if self.relationship_type.lower() in type_lower_map:
             self.relationship_type = type_lower_map[self.relationship_type.lower()]
         else:
             raise ValueError(f"Invalid relationship type '{self.relationship_type}'. Valid types (case-insensitive): {sorted(valid_types)}")
 
-        # Auto-correct direction case if provided
+    def _validate_direction_case(self) -> None:
+        """Validate and auto-correct direction case if provided."""
         if self.direction:
             direction_lower_map = {d.lower(): d for d in {"Up", "Down", "Left", "Right"}}
             if self.direction.lower() in direction_lower_map:
@@ -112,6 +130,8 @@ class RelationshipInput(BaseModel):
             else:
                 raise ValueError(f"Invalid direction '{self.direction}'. Valid directions (case-insensitive): Up, Down, Left, Right")
 
+    def _validate_additional_properties(self) -> None:
+        """Validate additional relationship properties."""
         if self.length is not None and not (1 <= self.length <= 5):
             raise ValueError(f"Invalid length '{self.length}'. Length must be between 1 and 5")
 
@@ -120,8 +140,6 @@ class RelationshipInput(BaseModel):
 
         if self.orientation not in {"vertical", "horizontal", "dot"}:
             raise ValueError(f"Invalid orientation '{self.orientation}'. Valid orientations: vertical, horizontal, dot")
-
-        return self
 
 
 class GroupInput(BaseModel):
@@ -161,21 +179,28 @@ class DiagramInput(BaseModel):
         element_ids = {elem.id for elem in self.elements}
         group_ids = {group.id for group in self.groups}
 
-        # Validate relationships reference existing elements
+        self._validate_relationship_references(element_ids)
+        self._validate_element_group_references(group_ids)
+        self._validate_group_parent_references(group_ids)
+
+        return self
+
+    def _validate_relationship_references(self, element_ids: set) -> None:
+        """Validate that all relationships reference existing elements."""
         for rel in self.relationships:
             if rel.from_element not in element_ids:
                 raise ValueError(f"Relationship '{rel.id}' references unknown source element '{rel.from_element}'")
             if rel.to_element not in element_ids:
                 raise ValueError(f"Relationship '{rel.id}' references unknown target element '{rel.to_element}'")
 
-        # Validate elements reference existing groups
+    def _validate_element_group_references(self, group_ids: set) -> None:
+        """Validate that all elements reference existing groups."""
         for elem in self.elements:
             if elem.group_id and elem.group_id not in group_ids:
                 raise ValueError(f"Element '{elem.id}' references unknown group '{elem.group_id}'")
 
-        # Validate groups reference existing parent groups
+    def _validate_group_parent_references(self, group_ids: set) -> None:
+        """Validate that all groups reference existing parent groups."""
         for group in self.groups:
             if group.parent_group_id and group.parent_group_id not in group_ids:
                 raise ValueError(f"Group '{group.id}' references unknown parent group '{group.parent_group_id}'")
-
-        return self

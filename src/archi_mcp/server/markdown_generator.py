@@ -66,29 +66,37 @@ def _add_elements_by_layer(md_content: list, generator, translator):
     md_content.append("## Elements by Layer")
     md_content.append("")
 
-    # Group elements by layer
+    layers = _group_elements_by_layer(generator)
+
+    for layer_name in sorted(layers.keys()):
+        _generate_layer_section(md_content, layer_name, layers[layer_name])
+
+
+def _group_elements_by_layer(generator):
+    """Group elements by their ArchiMate layer."""
     layers = {}
     for element in generator.elements.values():
         layer = element.layer.value if hasattr(element.layer, 'value') else str(element.layer)
         if layer not in layers:
             layers[layer] = []
         layers[layer].append(element)
+    return layers
 
-    for layer_name in sorted(layers.keys()):
-        md_content.append(f"### {layer_name} Layer")
-        md_content.append("")
 
-        elements = layers[layer_name]
+def _generate_layer_section(md_content: list, layer_name: str, elements: list):
+    """Generate markdown section for a specific layer."""
+    md_content.append(f"### {layer_name} Layer")
+    md_content.append("")
 
-        if elements:
-            md_content.append("| Element | Type | Description |")
-            md_content.append("|---------|------|-------------|")
+    if elements:
+        md_content.append("| Element | Type | Description |")
+        md_content.append("|---------|------|-------------|")
 
-            for element in sorted(elements, key=lambda x: x.name):
-                desc = element.description[:50] + "..." if element.description and len(element.description) > 50 else (element.description or "")
-                md_content.append(f"| {element.name} | {element.element_type} | {desc} |")
+        for element in sorted(elements, key=lambda x: x.name):
+            desc = element.description[:50] + "..." if element.description and len(element.description) > 50 else (element.description or "")
+            md_content.append(f"| {element.name} | {element.element_type} | {desc} |")
 
-        md_content.append("")
+    md_content.append("")
 
 
 def _add_relationships_section(md_content: list, generator, translator):
@@ -115,35 +123,7 @@ def _add_architecture_insights(md_content: list, generator, translator):
     md_content.append("## Architecture Insights")
     md_content.append("")
 
-    insights = []
-
-    # Count different relationship types
-    rel_types = {}
-    for rel in generator.relationships:
-        rel_type = rel.relationship_type.value if hasattr(rel.relationship_type, 'value') else str(rel.relationship_type)
-        rel_types[rel_type] = rel_types.get(rel_type, 0) + 1
-
-    if rel_types:
-        insights.append("### Relationship Analysis")
-        insights.append("")
-        for rel_type, count in sorted(rel_types.items(), key=lambda x: x[1], reverse=True):
-            insights.append(f"- **{rel_type}**: {count} relationship{'s' if count != 1 else ''}")
-
-    # Element connectivity analysis
-    element_connections = {}
-    for rel in generator.relationships:
-        for elem_id in [rel.source_id, rel.target_id]:
-            element_connections[elem_id] = element_connections.get(elem_id, 0) + 1
-
-    if element_connections:
-        most_connected = sorted(element_connections.items(), key=lambda x: x[1], reverse=True)[:5]
-        insights.append("")
-        insights.append("### Most Connected Elements")
-        insights.append("")
-        for elem_id, connections in most_connected:
-            if elem_id in generator.elements:
-                elem_name = generator.elements[elem_id].name
-                insights.append(f"- **{elem_name}**: {connections} connection{'s' if connections != 1 else ''}")
+    insights = _generate_insights_content(generator)
 
     if insights:
         md_content.extend(insights)
@@ -151,6 +131,58 @@ def _add_architecture_insights(md_content: list, generator, translator):
         md_content.append("No specific insights available for this architecture.")
 
     md_content.append("")
+
+
+def _generate_insights_content(generator) -> list:
+    """Generate insights content from relationship and connectivity analysis."""
+    insights = []
+
+    # Relationship type analysis
+    rel_types = _analyze_relationship_types(generator)
+    if rel_types:
+        insights.append("### Relationship Analysis")
+        insights.append("")
+        for rel_type, count in sorted(rel_types.items(), key=lambda x: x[1], reverse=True):
+            insights.append(f"- **{rel_type}**: {count} relationship{'s' if count != 1 else ''}")
+
+    # Element connectivity analysis
+    most_connected = _analyze_element_connectivity(generator)
+    if most_connected:
+        insights.append("")
+        insights.append("### Most Connected Elements")
+        insights.append("")
+        for elem_name, connections in most_connected:
+            insights.append(f"- **{elem_name}**: {connections} connection{'s' if connections != 1 else ''}")
+
+    return insights
+
+
+def _analyze_relationship_types(generator) -> dict:
+    """Analyze and count different relationship types."""
+    rel_types = {}
+    for rel in generator.relationships:
+        rel_type = rel.relationship_type.value if hasattr(rel.relationship_type, 'value') else str(rel.relationship_type)
+        rel_types[rel_type] = rel_types.get(rel_type, 0) + 1
+    return rel_types
+
+
+def _analyze_element_connectivity(generator) -> list:
+    """Analyze element connectivity and return most connected elements."""
+    element_connections = {}
+    for rel in generator.relationships:
+        for elem_id in [rel.source_id, rel.target_id]:
+            element_connections[elem_id] = element_connections.get(elem_id, 0) + 1
+
+    if not element_connections:
+        return []
+
+    most_connected = sorted(element_connections.items(), key=lambda x: x[1], reverse=True)[:5]
+    result = []
+    for elem_id, connections in most_connected:
+        if elem_id in generator.elements:
+            elem_name = generator.elements[elem_id].name
+            result.append((elem_name, connections))
+    return result
 
 
 def _add_markdown_footer(md_content: list, translator):

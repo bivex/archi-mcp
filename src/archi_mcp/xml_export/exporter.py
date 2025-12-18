@@ -117,37 +117,8 @@ class ArchiMateXMLExporter:
         try:
             logger.info(f"Starting XML export for {len(elements)} elements, {len(relationships)} relationships")
             
-            # Generate model ID if not provided
-            if not model_id:
-                model_id = f"id-{uuid.uuid4()}"
-            
-            # Create root element with Archi namespace structure
-            if LXML_AVAILABLE:
-                nsmap = {
-                    'xsi': self.XSI_NAMESPACE,
-                    'archimate': self.ARCHIMATE_NAMESPACE
-                }
-                root = etree.Element(f"{{{self.ARCHIMATE_NAMESPACE}}}model", nsmap=nsmap)
-            else:
-                # Register namespaces for ElementTree
-                etree.register_namespace('archimate', self.ARCHIMATE_NAMESPACE)
-                etree.register_namespace('xsi', self.XSI_NAMESPACE)
-                root = etree.Element(f"{{{self.ARCHIMATE_NAMESPACE}}}model")
-            
-            # Set root attributes
-            root.set("name", model_name)
-            root.set("id", model_id)
-            root.set("version", "4.9.0")  # Archi version
-            
-            # Add folders and elements using Archi structure
-            self._add_archi_folders_and_elements(root, elements)
-            
-            # Add relationships folder
-            self._add_archi_relationships(root, relationships)
-            
-            # Add Views folder with diagrams
-            self._add_archi_views(root, elements, relationships, model_name)
-            
+            xml_string, root = self._create_base_xml_structure(elements, relationships, model_name, model_id)
+
             # Convert to string (single line format like Archi)
             if LXML_AVAILABLE:
                 xml_string = etree.tostring(
@@ -161,57 +132,49 @@ class ArchiMateXMLExporter:
                 xml_string = etree.tostring(root, encoding='unicode')
                 xml_string = '<?xml version="1.0" encoding="UTF-8"?>' + xml_string
             
-            # Apply universal relationship fixing (safe - preserves PlantUML generation)
-            try:
-                # Universal fixing enabled by default for maximum Archi compatibility
-                enable_universal_fix = os.getenv("ARCHI_MCP_ENABLE_UNIVERSAL_FIX", "true").lower() in ("true", "1", "yes")
-                
-                if enable_universal_fix:
-                    xml_string, fix_stats = apply_universal_fix(xml_string)
-                    
-                    # Log results
-                    if fix_stats["fixes_applied"] > 0:
-                        logger.info(f"Universal relationship fixer: {fix_stats['fixes_applied']} relationships optimized for Archi compatibility")
-                        logger.info(f"Preservation rate: {(fix_stats['preserved_relationships'] / fix_stats['total_relationships'] * 100):.1f}%")
-                    else:
-                        logger.info(f"Universal fixer: All {fix_stats['total_relationships']} relationships already optimal")
-                else:
-                    logger.debug("Universal relationship fixing disabled")
-                    
-            except Exception as e:
-                logger.warning(f"Universal relationship fixing failed (non-blocking): {e}")
+            xml_string = self._apply_relationship_fixing(xml_string)
             
-            # Save to file if path provided
+            self._save_xml_to_file(xml_string, output_path)
+            self._perform_liberal_validation_and_analysis(xml_string)
+
+            logger.info("XML export completed successfully")
+            return xml_string
+
+        except Exception as e:
+            logger.error(f"Error during XML export: {e}")
+            raise  # Re-raise the exception after logging
+
+
+    def _perform_liberal_validation_and_analysis(self, xml_string: str):
+        """Performs liberal validation and analysis of the XML model."""
+        try:
+            # Use liberal validator for informational purposes only
+            analysis = analyze_model_relationships(xml_string)
+            
+            # Log the analysis results (informational only - no fixing)
+            problematic_count = len(analysis["problematic"])
+            total_count = analysis["total_relationships"]
+            
+            logger.info(f"📊 ArchiMate analysis: {total_count} relationships, {problematic_count} flagged for review")
+            
+            # Log cross-layer relationship statistics
+            cross_layer_count = len(analysis["cross_layer"])
+            same_layer_count = len(analysis["same_layer"])
+            logger.info(f"📈 Distribution: {same_layer_count} same-layer, {cross_layer_count} cross-layer relationships")
+            
+            # Note: Liberal validator allows most relationships as valid for practical use
+            logger.info("ℹ️  ArchiMate relationships may show warnings in Archi validation but are functionally valid")
+        except Exception as e:
+            logger.warning(f"Model analysis failed (non-blocking): {e}")
+
+    def _save_xml_to_file(self, xml_string: str, output_path: Optional[Path]):
+        """Saves the XML string to a file if output_path is provided."""
+        try:
             if output_path:
                 if isinstance(output_path, str):
                     output_path = Path(output_path)
                 output_path.write_text(xml_string, encoding='utf-8')
                 logger.info(f"XML exported to {output_path}")
-                
-                # Liberal validation and analysis (safe - never blocks export)
-                try:
-                    # Use liberal validator for informational purposes only
-                    analysis = analyze_model_relationships(xml_string)
-                    
-                    # Log the analysis results (informational only - no fixing)
-                    problematic_count = len(analysis["problematic"])
-                    total_count = analysis["total_relationships"]
-                    
-                    logger.info(f"📊 ArchiMate analysis: {total_count} relationships, {problematic_count} flagged for review")
-                    
-                    # Log cross-layer relationship statistics
-                    cross_layer_count = len(analysis["cross_layer"])
-                    same_layer_count = len(analysis["same_layer"])
-                    logger.info(f"📈 Distribution: {same_layer_count} same-layer, {cross_layer_count} cross-layer relationships")
-                    
-                    # Note: Liberal validator allows most relationships as valid for practical use
-                    logger.info("ℹ️  ArchiMate relationships may show warnings in Archi validation but are functionally valid")
-                        
-                except Exception as e:
-                    logger.warning(f"Model analysis failed (non-blocking): {e}")
-            
-            logger.info("XML export completed successfully")
-            return xml_string
             
         except Exception as e:
             logger.error(f"XML export failed: {e}")
@@ -428,90 +391,181 @@ class ArchiMateXMLExporter:
             view.set("connectionRouterType", "2")  # Important for Archi
             
             # Build connection mapping for targetConnections
-            connection_map = {}
-            connection_id_map = {}
-            
-            # Pre-generate connection IDs and map relationships
-            for relationship in relationships:
-                connection_id = f"id-{uuid.uuid4()}"
-                connection_id_map[relationship.id] = connection_id
-                
-                # Find source and target object indices
-                source_idx = None
-                target_idx = None
-                for i, element in enumerate(elements):
-                    if element.id == relationship.from_element:
-                        source_idx = i
-                    elif element.id == relationship.to_element:
-                        target_idx = i
-                
-                if source_idx is not None and target_idx is not None:
-                    target_obj_id = f"id-obj-{target_idx}"
-                    if target_obj_id not in connection_map:
-                        connection_map[target_obj_id] = []
-                    connection_map[target_obj_id].append(connection_id)
+            connection_map, connection_id_map = self._build_connection_maps(elements, relationships)
             
             # Calculate intelligent layout positions
             element_positions = self._calculate_intelligent_layout(elements, relationships)
             
             # Add elements to the view with intelligent positioning
             for i, element in enumerate(elements):
-                child = etree.SubElement(view, "child")
-                child.set(f"{{{self.XSI_NAMESPACE}}}type", "archimate:DiagramObject")
-                child.set("id", f"id-obj-{i}")
-                child.set("archimateElement", element.id)
-                
-                # Add targetConnections attribute if this element is a target
-                target_connections = connection_map.get(f"id-obj-{i}", [])
-                if target_connections:
-                    child.set("targetConnections", " ".join(target_connections))
-                
-                # Use intelligent layout positions
-                position = element_positions.get(element.id, {"x": 50, "y": 50})
-                bounds = etree.SubElement(child, "bounds")
-                bounds.set("x", str(position["x"]))
-                bounds.set("y", str(position["y"]))
-                bounds.set("width", str(DEFAULT_ELEMENT_WIDTH_XML))
-                bounds.set("height", str(DEFAULT_ELEMENT_HEIGHT))
-                
-                # Add sourceConnection elements as children
-                for relationship in relationships:
-                    if relationship.from_element == element.id:
-                        # Find target object ID
-                        target_idx = None
-                        for j, target_element in enumerate(elements):
-                            if target_element.id == relationship.to_element:
-                                target_idx = j
-                                break
-                        
-                        if target_idx is not None:
-                            source_connection = etree.SubElement(child, "sourceConnection")
-                            source_connection.set(f"{{{self.XSI_NAMESPACE}}}type", "archimate:Connection")
-                            source_connection.set("id", connection_id_map[relationship.id])
-                            source_connection.set("source", f"id-obj-{i}")
-                            source_connection.set("target", f"id-obj-{target_idx}")
-                            source_connection.set("archimateRelationship", relationship.id)
-                            
-                            # Add connection routing for better visual clarity
-                            source_pos = element_positions.get(element.id, {"x": 50, "y": 50})
-                            target_element = elements[target_idx]
-                            target_pos = element_positions.get(target_element.id, {"x": 50, "y": 50})
-                            
-                            # Add bendpoints for cross-layer connections to avoid overlap
-                            if abs(source_pos["y"] - target_pos["y"]) > LAYER_THRESHOLD_Y:  # Different layers
-                                bendpoints = self._calculate_connection_bendpoints(source_pos, target_pos)
-                                if bendpoints:
-                                    for bp_idx, (bx, by) in enumerate(bendpoints):
-                                        bendpoint = etree.SubElement(source_connection, "bendpoint")
-                                        bendpoint.set("startX", str(bx - source_pos["x"] - BENDPOINT_OFFSET_X))  # Relative to source center
-                                        bendpoint.set("startY", str(by - source_pos["y"] - BENDPOINT_OFFSET_Y))
-                                        bendpoint.set("endX", str(bx - target_pos["x"] - BENDPOINT_OFFSET_X))    # Relative to target center
-                                        bendpoint.set("endY", str(by - target_pos["y"] - BENDPOINT_OFFSET_Y))
+                self._add_diagram_object(view, i, element, element_positions, connection_map, relationships, connection_id_map)
             
             # Set viewpoint property
             viewpoint_prop = etree.SubElement(view, "property")
             viewpoint_prop.set("key", "viewpoint")
             viewpoint_prop.set("value", "layered")
+    
+    def _build_connection_maps(self, elements: List[ArchiMateElement], relationships: List[ArchiMateRelationship]) -> (Dict[str, List[str]], Dict[str, str]):
+        """Builds connection maps for targetConnections and connection IDs."""
+        connection_map = {}
+        connection_id_map = {}
+
+        for relationship in relationships:
+            connection_id = f"id-{uuid.uuid4()}"
+            connection_id_map[relationship.id] = connection_id
+
+            source_idx = None
+            target_idx = None
+            for i, element in enumerate(elements):
+                if element.id == relationship.from_element:
+                    source_idx = i
+                elif element.id == relationship.to_element:
+                    target_idx = i
+
+            if source_idx is not None and target_idx is not None:
+                target_obj_id = f"id-obj-{target_idx}"
+                if target_obj_id not in connection_map:
+                    connection_map[target_obj_id] = []
+                connection_map[target_obj_id].append(connection_id)
+        
+        return connection_map, connection_id_map
+
+    def _create_base_xml_structure(self, elements: List[ArchiMateElement], relationships: List[ArchiMateRelationship], model_name: str, model_id: Optional[str]) -> (str, Any):
+        """Creates the base XML structure including root, folders, elements, and relationships."""
+        if not model_id:
+            model_id = f"id-{uuid.uuid4()}"
+
+        if LXML_AVAILABLE:
+            nsmap = {
+                'xsi': self.XSI_NAMESPACE,
+                'archimate': self.ARCHIMATE_NAMESPACE
+            }
+            root = etree.Element(f"{{{self.ARCHIMATE_NAMESPACE}}}model", nsmap=nsmap)
+        else:
+            etree.register_namespace('archimate', self.ARCHIMATE_NAMESPACE)
+            etree.register_namespace('xsi', self.XSI_NAMESPACE)
+            root = etree.Element(f"{{{self.ARCHIMATE_NAMESPACE}}}model")
+
+        root.set("name", model_name)
+        root.set("id", model_id)
+        root.set("version", "4.9.0")
+
+        self._add_archi_folders_and_elements(root, elements)
+        self._add_archi_relationships(root, relationships)
+        self._add_archi_views(root, elements, relationships, model_name)
+
+        return "", root
+
+    def _apply_relationship_fixing(self, xml_string: str) -> str:
+        """Applies universal relationship fixing to the XML string."""
+        try:
+            enable_universal_fix = os.getenv("ARCHI_MCP_ENABLE_UNIVERSAL_FIX", "true").lower() in ("true", "1", "yes")
+            
+            if enable_universal_fix:
+                xml_string, fix_stats = apply_universal_fix(xml_string)
+                
+                if fix_stats["fixes_applied"] > 0:
+                    logger.info(f"Universal relationship fixer: {fix_stats['fixes_applied']} relationships optimized for Archi compatibility")
+                    logger.info(f"Preservation rate: {(fix_stats['preserved_relationships'] / fix_stats['total_relationships'] * 100):.1f}%")
+                else:
+                    logger.info(f"Universal fixer: All {fix_stats['total_relationships']} relationships already optimal")
+            else:
+                logger.debug("Universal relationship fixing disabled")
+                    
+        except Exception as e:
+            logger.warning(f"Universal relationship fixing failed (non-blocking): {e}")
+        return xml_string
+
+    def _add_diagram_object(self, view_element, index, element, element_positions, connection_map, relationships, connection_id_map):
+        """Adds a DiagramObject element to the view."""
+        child = etree.SubElement(view_element, "child")
+        child.set(f"{{{self.XSI_NAMESPACE}}}type", "archimate:DiagramObject")
+        child.set("id", f"id-obj-{index}")
+        child.set("archimateElement", element.id)
+        
+        # Add targetConnections attribute if this element is a target
+        target_connections = connection_map.get(f"id-obj-{index}", [])
+        if target_connections:
+            child.set("targetConnections", " ".join(target_connections))
+        
+        # Use intelligent layout positions
+        position = element_positions.get(element.id, {"x": 50, "y": 50})
+        bounds = etree.SubElement(child, "bounds")
+        bounds.set("x", str(position["x"]))
+        bounds.set("y", str(position["y"]))
+        bounds.set("width", str(DEFAULT_ELEMENT_WIDTH_XML))
+        bounds.set("height", str(DEFAULT_ELEMENT_HEIGHT))
+        
+        # Add sourceConnection elements as children
+        for relationship in relationships:
+            if relationship.from_element == element.id:
+                # Find target object ID
+                target_idx = None
+                for j, target_element in enumerate(elements):
+                    if target_element.id == relationship.to_element:
+                        target_idx = j
+                        break
+                
+                if target_idx is not None:
+                    self._add_source_connection(child, relationship, index, target_idx, connection_id_map, element_positions, elements)
+
+    def _add_source_connection(self, parent_element, relationship, source_idx, target_idx, connection_id_map, element_positions, elements):
+        """Adds a sourceConnection element to a diagram object."""
+        source_connection = etree.SubElement(parent_element, "sourceConnection")
+        source_connection.set(f"{{{self.XSI_NAMESPACE}}}type", "archimate:Connection")
+        source_connection.set("id", connection_id_map[relationship.id])
+        source_connection.set("source", f"id-obj-{source_idx}")
+        source_connection.set("target", f"id-obj-{target_idx}")
+        source_connection.set("archimateRelationship", relationship.id)
+        
+        # Add connection routing for better visual clarity
+        source_pos = element_positions.get(elements[source_idx].id, {"x": 50, "y": 50})
+        target_pos = element_positions.get(elements[target_idx].id, {"x": 50, "y": 50})
+        
+        # Add bendpoints for cross-layer connections to avoid overlap
+        if abs(source_pos["y"] - target_pos["y"]) > LAYER_THRESHOLD_Y:  # Different layers
+            bendpoints = self._calculate_connection_bendpoints(source_pos, target_pos)
+            if bendpoints:
+                for bp_idx, (bx, by) in enumerate(bendpoints):
+                    bendpoint = etree.SubElement(source_connection, "bendpoint")
+                    bendpoint.set("startX", str(bx - source_pos["x"] - BENDPOINT_OFFSET_X))  # Relative to source center
+                    bendpoint.set("startY", str(by - source_pos["y"] - BENDPOINT_OFFSET_Y))
+                    bendpoint.set("endX", str(bx - target_pos["x"] - BENDPOINT_OFFSET_X))    # Relative to target center
+                    bendpoint.set("endY", str(by - target_pos["y"] - BENDPOINT_OFFSET_Y))
+    
+    def _get_cluster_seed(self, elements: List[ArchiMateElement], element_connections: Dict[str, Dict[str, List[str]]]) -> ArchiMateElement:
+        """Finds the most connected element to start a new cluster."""
+        return max(elements, key=lambda e: 
+                         len(element_connections[e.id]["outgoing"]) + len(element_connections[e.id]["incoming"]))
+
+    def _add_related_elements_to_cluster(self, current_cluster: List[ArchiMateElement], remaining_elements: List[ArchiMateElement], element_connections: Dict[str, Dict[str, List[str]]], max_per_row: int):
+        """Adds related elements to the current cluster."""
+        while len(current_cluster) < max_per_row and remaining_elements:
+            best_candidate = None
+            best_score = -1
+            
+            for candidate in remaining_elements:
+                score = 0
+                for cluster_element in current_cluster:
+                    if candidate.id in element_connections[cluster_element.id]["outgoing"]:
+                        score += 2
+                    if candidate.id in element_connections[cluster_element.id]["incoming"]:
+                        score += 2
+                    if cluster_element.id in element_connections[candidate.id]["outgoing"]:
+                        score += 1
+                    if cluster_element.id in element_connections[candidate.id]["incoming"]:
+                        score += 1
+                
+                if score > best_score:
+                    best_score = score
+                    best_candidate = candidate
+            
+            if best_candidate and best_score > 0:
+                current_cluster.append(best_candidate)
+                remaining_elements.remove(best_candidate)
+            else:
+                if remaining_elements:
+                    current_cluster.append(remaining_elements.pop(0))
     
     def _calculate_intelligent_layout(self, elements: List[ArchiMateElement], relationships: List[ArchiMateRelationship]) -> Dict[str, Dict[str, int]]:
         """Calculate intelligent layout positions for elements based on ArchiMate layer hierarchy."""
@@ -537,7 +591,7 @@ class ArchiMateXMLExporter:
         current_y = self.layout_config["start_y"]
         
         # Position elements layer by layer following ArchiMate hierarchy
-        for layer_name in layer_hierarchy:
+        for layer_name in self.layer_hierarchy:
             layer_elements = layer_groups[layer_name]
             if not layer_elements:
                 continue
@@ -549,18 +603,29 @@ class ArchiMateXMLExporter:
             
             # Calculate positions for this layer
             layer_positions = self._calculate_layer_positions(
-                layer_elements, element_connections, start_x, current_y, 
-                element_width, max_elements_per_row
+                layer_elements, element_connections, self.layout_config["start_x"], current_y, 
+                self.layout_config["element_width"], self.layout_config["max_elements_per_row"]
             )
             
             # Add to overall positions
             positions.update(layer_positions)
             
             # Move to next layer position
-            current_y += layer_height
+            current_y += self.layout_config["layer_height"]
         
         return positions
-    
+
+    def _build_element_connection_graph(self, elements: List[ArchiMateElement], relationships: List[ArchiMateRelationship]) -> Dict[str, Dict[str, List[str]]]:
+        """Builds a graph of element connections (incoming/outgoing relationships)."""
+        element_connections = {element.id: {"outgoing": [], "incoming": []} for element in elements}
+        
+        for relationship in relationships:
+            if relationship.from_element in element_connections:
+                element_connections[relationship.from_element]["outgoing"].append(relationship.to_element)
+            if relationship.to_element in element_connections:
+                element_connections[relationship.to_element]["incoming"].append(relationship.from_element)
+        return element_connections
+
     def _calculate_layer_positions(self, layer_elements, element_connections, start_x, start_y, 
                                   element_width, max_elements_per_row):
         """Calculate positions for elements within a single layer with relationship awareness."""
@@ -619,42 +684,13 @@ class ArchiMateXMLExporter:
         remaining_elements = elements.copy()
         
         while remaining_elements:
-            # Start a new cluster with the most connected element
-            cluster_seed = max(remaining_elements, key=lambda e: 
-                             len(element_connections[e.id]["outgoing"]) + len(element_connections[e.id]["incoming"]))
+            cluster_seed = self._get_cluster_seed(remaining_elements, element_connections)
             
             current_cluster = [cluster_seed]
             remaining_elements.remove(cluster_seed)
             
             # Add related elements to the cluster (up to max_per_row)
-            while len(current_cluster) < max_per_row and remaining_elements:
-                best_candidate = None
-                best_score = -1
-                
-                for candidate in remaining_elements:
-                    # Score based on connections to elements already in cluster
-                    score = 0
-                    for cluster_element in current_cluster:
-                        if candidate.id in element_connections[cluster_element.id]["outgoing"]:
-                            score += 2  # Outgoing connection
-                        if candidate.id in element_connections[cluster_element.id]["incoming"]:
-                            score += 2  # Incoming connection
-                        if cluster_element.id in element_connections[candidate.id]["outgoing"]:
-                            score += 1  # Connected element
-                        if cluster_element.id in element_connections[candidate.id]["incoming"]:
-                            score += 1  # Connected element
-                    
-                    if score > best_score:
-                        best_score = score
-                        best_candidate = candidate
-                
-                if best_candidate and best_score > 0:
-                    current_cluster.append(best_candidate)
-                    remaining_elements.remove(best_candidate)
-                else:
-                    # No more related elements, move to next available
-                    if remaining_elements:
-                        current_cluster.append(remaining_elements.pop(0))
+            self._add_related_elements_to_cluster(current_cluster, remaining_elements, element_connections, max_per_row)
             
             clusters.append(current_cluster)
         
@@ -690,12 +726,8 @@ class ArchiMateXMLExporter:
     
     def _group_elements_by_layer(self, elements: List[ArchiMateElement]):
         """Group elements by their ArchiMate layer."""
-        layer_hierarchy = [
-            "Motivation", "Strategy", "Business", "Application", 
-            "Technology", "Physical", "Implementation"
-        ]
         
-        layer_groups = {layer: [] for layer in layer_hierarchy}
+        layer_groups = {layer: [] for layer in self.layer_hierarchy}
         
         for element in elements:
             layer = element.layer.value if hasattr(element.layer, 'value') else str(element.layer)

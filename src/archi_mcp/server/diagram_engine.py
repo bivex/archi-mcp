@@ -192,77 +192,105 @@ def _generate_images(plantuml_code: str, plantuml_jar: str, debug_log: list) -> 
     # Setup Java environment
     setup_java_environment()
 
-    # Create temporary files for PlantUML processing
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.puml', delete=False) as temp_file:
-        temp_file.write(plantuml_code)
-        temp_file_path = temp_file.name
+    temp_file_path = _setup_output_directory(plantuml_code)
 
     try:
-        # Generate PNG in background
-        png_file_path = temp_file_path.replace('.puml', '.png')
-        cmd_png = ['java', '-jar', plantuml_jar, '-tpng', temp_file_path]
+        png_process, svg_process, png_file_path, svg_file_path = _generate_single_image(
+            temp_file_path, plantuml_jar, debug_log)
 
-        debug_log.append(f"Running PlantUML PNG generation: {' '.join(cmd_png)}")
-        png_process = subprocess.Popen(
-            cmd_png,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
+        _validate_png_generation(png_process, png_file_path, debug_log)
 
-        # Generate SVG in background (parallel with PNG)
-        svg_file_path = temp_file_path.replace('.puml', '.svg')
-        cmd_svg = ['java', '-jar', plantuml_jar, '-tsvg', temp_file_path]
+        svg_file_path = _handle_svg_generation(svg_process, svg_file_path, debug_log)
 
-        debug_log.append(f"Running PlantUML SVG generation: {' '.join(cmd_svg)}")
-        svg_process = subprocess.Popen(
-            cmd_svg,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
+        return png_file_path, svg_file_path
 
-        # Wait for PNG process with timeout
-        try:
-            png_process.wait(timeout=60)
-            if png_process.returncode != 0:
-                _, stderr = png_process.communicate()
-                error_msg = stderr.strip() if stderr else "Unknown error"
-                debug_log.append(f"PNG generation failed: {error_msg}")
-                if "Unable to locate a Java Runtime" in error_msg:
-                    raise ArchiMateError("Failed to generate PNG: Java runtime not found. Please install Java (OpenJDK) to use PlantUML. On macOS: 'brew install openjdk'. On Ubuntu/Debian: 'sudo apt install openjdk-21-jdk'.")
-                raise ArchiMateError(f"Failed to generate PNG: {error_msg}")
-        except subprocess.TimeoutExpired:
-            png_process.kill()
-            debug_log.append("PNG generation timed out")
-            raise ArchiMateError("PNG generation timed out (60 seconds)")
-
-        # Validate PNG file
-        png_valid, png_msg = validate_png_file(Path(png_file_path))
-        if not png_valid:
-            debug_log.append(f"PNG validation failed: {png_msg}")
-            raise ArchiMateError(f"Generated PNG is invalid: {png_msg}")
-
-        debug_log.append(f"PNG generation successful: {png_file_path}")
-
-        # Wait for SVG process (no timeout needed since PNG succeeded)
-        svg_process.wait()
-        svg_generated = False
-        if svg_process.returncode == 0 and os.path.exists(svg_file_path):
-            svg_generated = True
-            debug_log.append(f"SVG generation successful: {svg_file_path}")
-        else:
-            debug_log.append("SVG generation failed or not supported")
-
-        return png_file_path, svg_file_path if svg_generated else None
-
-    except subprocess.TimeoutExpired:
-        debug_log.append("Image generation timed out")
-        raise ArchiMateError("Image generation timed out (60 seconds)")
+    except Exception as e:
+        _handle_generation_error(e, debug_log)
     finally:
         # Clean up temporary PlantUML file
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
+
+
+def _setup_output_directory(plantuml_code: str) -> str:
+    """Create temporary file for PlantUML processing."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.puml', delete=False) as temp_file:
+        temp_file.write(plantuml_code)
+        return temp_file.name
+
+
+def _generate_single_image(temp_file_path: str, plantuml_jar: str, debug_log: list) -> Tuple[subprocess.Popen, subprocess.Popen, str, str]:
+    """Generate PNG and SVG images in parallel."""
+    # Generate PNG in background
+    png_file_path = temp_file_path.replace('.puml', '.png')
+    cmd_png = ['java', '-jar', plantuml_jar, '-tpng', temp_file_path]
+
+    debug_log.append(f"Running PlantUML PNG generation: {' '.join(cmd_png)}")
+    png_process = subprocess.Popen(
+        cmd_png,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    # Generate SVG in background (parallel with PNG)
+    svg_file_path = temp_file_path.replace('.puml', '.svg')
+    cmd_svg = ['java', '-jar', plantuml_jar, '-tsvg', temp_file_path]
+
+    debug_log.append(f"Running PlantUML SVG generation: {' '.join(cmd_svg)}")
+    svg_process = subprocess.Popen(
+        cmd_svg,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    return png_process, svg_process, png_file_path, svg_file_path
+
+
+def _validate_png_generation(png_process: subprocess.Popen, png_file_path: str, debug_log: list):
+    """Wait for and validate PNG generation."""
+    try:
+        png_process.wait(timeout=60)
+        if png_process.returncode != 0:
+            _, stderr = png_process.communicate()
+            error_msg = stderr.strip() if stderr else "Unknown error"
+            debug_log.append(f"PNG generation failed: {error_msg}")
+            if "Unable to locate a Java Runtime" in error_msg:
+                raise ArchiMateError("Failed to generate PNG: Java runtime not found. Please install Java (OpenJDK) to use PlantUML. On macOS: 'brew install openjdk'. On Ubuntu/Debian: 'sudo apt install openjdk-21-jdk'.")
+            raise ArchiMateError(f"Failed to generate PNG: {error_msg}")
+    except subprocess.TimeoutExpired:
+        png_process.kill()
+        debug_log.append("PNG generation timed out")
+        raise ArchiMateError("PNG generation timed out (60 seconds)")
+
+    # Validate PNG file
+    png_valid, png_msg = validate_png_file(Path(png_file_path))
+    if not png_valid:
+        debug_log.append(f"PNG validation failed: {png_msg}")
+        raise ArchiMateError(f"Generated PNG is invalid: {png_msg}")
+
+    debug_log.append(f"PNG generation successful: {png_file_path}")
+
+
+def _handle_svg_generation(svg_process: subprocess.Popen, svg_file_path: str, debug_log: list) -> Optional[str]:
+    """Handle SVG generation completion."""
+    svg_process.wait()
+    if svg_process.returncode == 0 and os.path.exists(svg_file_path):
+        debug_log.append(f"SVG generation successful: {svg_file_path}")
+        return svg_file_path
+    else:
+        debug_log.append("SVG generation failed or not supported")
+        return None
+
+
+def _handle_generation_error(error: Exception, debug_log: list):
+    """Handle image generation errors."""
+    if isinstance(error, subprocess.TimeoutExpired):
+        debug_log.append("Image generation timed out")
+        raise ArchiMateError("Image generation timed out (60 seconds)")
+    else:
+        raise error
 
 
 def _export_diagram_files(plantuml_code: str, png_file_path: str, svg_file_path: str,
@@ -423,64 +451,14 @@ def create_archimate_diagram_impl(diagram: DiagramInput) -> DiagramGenerationRes
         logger.info("Starting ArchiMate diagram creation")
         debug_log.append(f"Started at: {datetime.now().isoformat()}")
 
-        # Setup language and translator
-        language, translator, generator = _setup_language_and_translator(diagram, debug_log)
+        # Prepare diagram data and configuration
+        generator, title, description = _prepare_diagram_data(diagram, debug_log)
 
-        # Apply relationship label translations
-        translate_relationship_labels(diagram, translator)
+        # Generate PlantUML code
+        plantuml_code = _generate_plantuml_code(generator, title, description, debug_log)
 
-        # Configure layout
-        layout = _configure_layout(diagram, debug_log)
-        generator.set_layout(layout)
-
-        # Configure hide/remove unlinked elements
-        layout_config = diagram.layout or {}
-        if layout_config.get("hide_unlinked", False):
-            generator.hide_unlinked_elements()
-            debug_log.append("Hide unlinked elements enabled")
-        elif layout_config.get("remove_unlinked", False):
-            generator.remove_unlinked_elements()
-            debug_log.append("Remove unlinked elements enabled")
-
-        # Configure remove all tagged elements (wildcard)
-        if layout_config.get("remove_all_tagged", False):
-            generator.remove_all_tagged_elements()
-            debug_log.append("Remove all tagged elements (wildcard) enabled")
-
-        # Process elements, groups and relationships
-        _process_elements(generator, diagram, language, debug_log)
-        _process_groups(generator, diagram, debug_log)
-        _process_relationships(generator, diagram, language, debug_log)
-
-        # Generate and validate PlantUML
-        title = diagram.title or "ArchiMate Diagram"
-        description = diagram.description or ""
-        plantuml_code = _generate_and_validate_plantuml(generator, title, description, debug_log)
-
-        # Find PlantUML JAR
-        plantuml_jar = find_plantuml_jar(debug_log)
-        if not plantuml_jar:
-            raise ArchiMateError("PlantUML JAR not found. Please install PlantUML.")
-
-        # Generate images
-        png_file_path, svg_file_path = _generate_images(plantuml_code, plantuml_jar, debug_log)
-
-        # Create export directory
-        export_dir = create_export_directory()
-
-        # Export files
-        puml_path, png_path, svg_path, svg_generated = _export_diagram_files(
-            plantuml_code, png_file_path, svg_file_path, export_dir, title, debug_log
-        )
-
-        # Generate success response
-        processing_time = time.time() - start_time
-        debug_log.append(f"Total processing time: {processing_time:.2f} seconds")
-
-        response = _generate_success_response(export_dir, svg_generated, puml_path, png_path, svg_path, debug_log)
-
-        logger.info(f"ArchiMate diagram created successfully in {processing_time:.2f} seconds")
-        return response
+        # Process generated images and create response
+        return _process_generated_images(plantuml_code, diagram, title, start_time, debug_log)
 
     except Exception as e:
         logger.error(f"Error creating ArchiMate diagram: {e}")
@@ -491,6 +469,76 @@ def create_archimate_diagram_impl(diagram: DiagramInput) -> DiagramGenerationRes
         # Build enhanced error response
         enhanced_error = build_enhanced_error_response(e, debug_log, None, locals().get('plantuml_code'))
         raise ArchiMateError(enhanced_error)
+
+
+def _prepare_diagram_data(diagram: DiagramInput, debug_log: list) -> tuple:
+    """Prepare diagram data and configuration."""
+    # Setup language and translator
+    language, translator, generator = _setup_language_and_translator(diagram, debug_log)
+
+    # Apply relationship label translations
+    translate_relationship_labels(diagram, translator)
+
+    # Configure layout
+    layout = _configure_layout(diagram, debug_log)
+    generator.set_layout(layout)
+
+    # Configure hide/remove unlinked elements
+    layout_config = diagram.layout or {}
+    if layout_config.get("hide_unlinked", False):
+        generator.hide_unlinked_elements()
+        debug_log.append("Hide unlinked elements enabled")
+    elif layout_config.get("remove_unlinked", False):
+        generator.remove_unlinked_elements()
+        debug_log.append("Remove unlinked elements enabled")
+
+    # Configure remove all tagged elements (wildcard)
+    if layout_config.get("remove_all_tagged", False):
+        generator.remove_all_tagged_elements()
+        debug_log.append("Remove all tagged elements (wildcard) enabled")
+
+    # Process elements, groups and relationships
+    _process_elements(generator, diagram, language, debug_log)
+    _process_groups(generator, diagram, debug_log)
+    _process_relationships(generator, diagram, language, debug_log)
+
+    title = diagram.title or "ArchiMate Diagram"
+    description = diagram.description or ""
+
+    return generator, title, description
+
+
+def _generate_plantuml_code(generator, title: str, description: str, debug_log: list) -> str:
+    """Generate and validate PlantUML code."""
+    return _generate_and_validate_plantuml(generator, title, description, debug_log)
+
+
+def _process_generated_images(plantuml_code: str, diagram: DiagramInput, title: str, start_time: float, debug_log: list) -> DiagramGenerationResponse:
+    """Process generated images and create response."""
+    # Find PlantUML JAR
+    plantuml_jar = find_plantuml_jar(debug_log)
+    if not plantuml_jar:
+        raise ArchiMateError("PlantUML JAR not found. Please install PlantUML.")
+
+    # Generate images
+    png_file_path, svg_file_path = _generate_images(plantuml_code, plantuml_jar, debug_log)
+
+    # Create export directory
+    export_dir = create_export_directory()
+
+    # Export files
+    puml_path, png_path, svg_path, svg_generated = _export_diagram_files(
+        plantuml_code, png_file_path, svg_file_path, export_dir, title, debug_log
+    )
+
+    # Generate success response
+    processing_time = time.time() - start_time
+    debug_log.append(f"Total processing time: {processing_time:.2f} seconds")
+
+    response = _generate_success_response(export_dir, svg_generated, puml_path, png_path, svg_path, debug_log)
+
+    logger.info(f"ArchiMate diagram created successfully in {processing_time:.2f} seconds")
+    return response
 
 
 def load_diagram_from_file_impl(file_path: str) -> DiagramGenerationResponse:

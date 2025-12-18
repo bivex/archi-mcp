@@ -252,13 +252,13 @@ def test_end_to_end_diagram_creation():
     
     result1 = create_archimate_diagram.fn(diagram_input)
     # Should be a string with success message
-    assert isinstance(result1, str)
-    assert "ArchiMate diagram created successfully" in result1 or "Test" in result1
+    assert result1.success is True
+    assert "ArchiMate diagram generated successfully" in result1.message
     
     # Step 2: Analyze current architecture
     # Diagram creation should complete without errors
     assert result1 is not None
-    assert isinstance(result1, str)
+    assert result1.success is True
 
 def test_performance_basic():
     """Basic performance test for tool execution."""
@@ -293,5 +293,5 @@ def test_performance_basic():
         assert result is not None
     else:
         # If it's a string, check for success message
-        assert isinstance(result, str)
-        assert "ArchiMate diagram generated successfully" in result
+        assert result.success is True
+        assert "ArchiMate diagram generated successfully" in result.message

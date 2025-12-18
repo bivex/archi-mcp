@@ -24,14 +24,21 @@ from typing import Tuple
 
 def setup_java_environment():
     """Setup Java environment variables for PlantUML execution."""
-    # Ensure JAVA_HOME is set if we can find it
+    _setup_java_home()
+    _setup_java_path()
+
+
+def _setup_java_home():
+    """Ensure JAVA_HOME is set if we can find it."""
     if not os.getenv("JAVA_HOME"):
         java_path = _find_java_executable()
         if java_path and java_path != "java":
             java_home = os.path.dirname(os.path.dirname(java_path))
             os.environ["JAVA_HOME"] = java_home
 
-    # Ensure Java bin directory is in PATH
+
+def _setup_java_path():
+    """Ensure Java bin directory is in PATH."""
     java_path = _find_java_executable()
     if java_path and java_path != "java":
         java_bin_dir = os.path.dirname(java_path)
@@ -128,9 +135,26 @@ def validate_png_file(png_file_path: Path) -> Tuple[bool, str]:
 
 def _find_java_executable() -> str:
     """Find Java executable in common locations."""
-    import shutil
-
     # First, try JAVA_HOME environment variable
+    java_path = _check_java_home_locations()
+    if java_path:
+        return java_path
+
+    # Try common Java paths for macOS and Linux
+    java_path = _check_common_java_locations()
+    if java_path:
+        return java_path
+
+    # Last resort: try to find java in common directories using glob patterns
+    java_path = _check_java_from_path()
+    if java_path:
+        return java_path
+
+    return "java"  # Fallback to PATH
+
+
+def _check_java_home_locations() -> str:
+    """Check for Java in JAVA_HOME environment variable."""
     java_home = os.getenv("JAVA_HOME")
     if java_home:
         java_path = os.path.join(java_home, "bin", "java")
@@ -142,8 +166,13 @@ def _find_java_executable() -> str:
                     return java_path
             except (subprocess.TimeoutExpired, FileNotFoundError):
                 pass
+    return ""
 
-    # Try common Java paths for macOS and Linux
+
+def _check_common_java_locations() -> str:
+    """Try common Java paths for macOS and Linux."""
+    import shutil
+
     java_paths = [
         "/opt/homebrew/opt/openjdk/bin/java",          # Homebrew OpenJDK (Apple Silicon)
         "/usr/local/opt/openjdk/bin/java",             # Homebrew OpenJDK (Intel)
@@ -164,27 +193,26 @@ def _find_java_executable() -> str:
 
     for java_path in java_paths:
         try:
-            # Use shutil.which for PATH-based lookups, direct check for absolute paths
             if os.path.isabs(java_path):
                 if os.path.exists(java_path) and os.access(java_path, os.X_OK):
-                    # Test if Java actually works
                     result = subprocess.run([java_path, "-version"],
                                           capture_output=True, text=True, timeout=5)
                     if result.returncode == 0:
                         return java_path
             else:
-                # For PATH-based names like "java"
                 found_path = shutil.which(java_path)
                 if found_path:
-                    # Test if Java actually works
                     result = subprocess.run([found_path, "-version"],
                                           capture_output=True, text=True, timeout=5)
                     if result.returncode == 0:
                         return found_path
         except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
             continue
+    return ""
 
-    # Last resort: try to find java in common directories
+
+def _check_java_from_path() -> str:
+    """Last resort: try to find java in common directories using glob patterns."""
     import glob
     for pattern in [
         "/usr/lib/jvm/*/bin/java",
@@ -201,8 +229,7 @@ def _find_java_executable() -> str:
                         return match
                 except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
                     continue
-
-    return "java"  # Fallback to PATH
+    return ""
 
 
 def find_plantuml_jar(debug_log: list = None) -> str:

@@ -283,100 +283,139 @@ def normalize_relationship_type(rel_type: str) -> str:
 def validate_element_input(element: ElementInput) -> Tuple[bool, str]:
     """Validate element input data."""
     try:
-        # Check if element type exists in ArchiMate specification
-        normalized_type = normalize_element_type(element.element_type)
-        if normalized_type not in ARCHIMATE_ELEMENTS:
-            return False, f"Unknown element type '{element.element_type}'. Valid types include: {', '.join(sorted(ARCHIMATE_ELEMENTS.keys())[:10])}..."
-
-        # Check required fields
-        if not element.id or not element.id.strip():
-            return False, "Element ID is required and cannot be empty"
-
-        if not element.name or not element.name.strip():
-            return False, "Element name is required and cannot be empty"
-
-        # Validate layer
-        if element.layer not in ["Business", "Application", "Technology", "Physical", "Motivation", "Strategy", "Implementation"]:
-            return False, f"Invalid layer '{element.layer}'. Valid layers: Business, Application, Technology, Physical, Motivation, Strategy, Implementation"
-
+        _validate_element_type(element.element_type)
+        _validate_element_required_fields(element.id, element.name)
+        _validate_element_layer(element.layer)
         return True, "Valid"
 
+    except ValueError as e:
+        return False, str(e)
     except Exception as e:
         return False, f"Validation error: {str(e)}"
+
+
+def _validate_element_type(element_type: str) -> None:
+    """Validate element type exists in ArchiMate specification."""
+    normalized_type = normalize_element_type(element_type)
+    if normalized_type not in ARCHIMATE_ELEMENTS:
+        raise ValueError(f"Unknown element type '{element_type}'. Valid types include: {', '.join(sorted(ARCHIMATE_ELEMENTS.keys())[:10])}...")
+
+
+def _validate_element_required_fields(element_id: str, element_name: str) -> None:
+    """Validate required element fields."""
+    if not element_id or not element_id.strip():
+        raise ValueError("Element ID is required and cannot be empty")
+
+    if not element_name or not element_name.strip():
+        raise ValueError("Element name is required and cannot be empty")
+
+
+def _validate_element_layer(layer: str) -> None:
+    """Validate element layer."""
+    valid_layers = ["Business", "Application", "Technology", "Physical", "Motivation", "Strategy", "Implementation"]
+    if layer not in valid_layers:
+        raise ValueError(f"Invalid layer '{layer}'. Valid layers: {', '.join(valid_layers)}")
 
 
 def validate_relationship_input(rel: RelationshipInput, language: str = "en") -> Tuple[bool, str]:
     """Validate relationship input data."""
     try:
-        # Check if relationship type exists
-        normalized_type = normalize_relationship_type(rel.relationship_type)
-        if normalized_type not in ARCHIMATE_RELATIONSHIPS:
-            return False, f"Unknown relationship type '{rel.relationship_type}'. Valid types: {', '.join(sorted(ARCHIMATE_RELATIONSHIPS.keys()))}"
-
-        # Check required fields
-        if not rel.id or not rel.id.strip():
-            return False, "Relationship ID is required and cannot be empty"
-
-        if not rel.from_element or not rel.from_element.strip():
-            return False, "Source element ID is required and cannot be empty"
-
-        if not rel.to_element or not rel.to_element.strip():
-            return False, "Target element ID is required and cannot be empty"
-
-        # Check for self-references
-        if rel.from_element == rel.to_element:
-            return False, "Relationship cannot reference the same element as both source and target"
-
+        _validate_relationship_type_exists(rel.relationship_type)
+        _validate_relationship_required_fields(rel.id, rel.from_element, rel.to_element)
+        _validate_relationship_no_self_reference(rel.from_element, rel.to_element)
         return True, "Valid"
 
+    except ValueError as e:
+        return False, str(e)
     except Exception as e:
         return False, f"Validation error: {str(e)}"
+
+
+def _validate_relationship_type_exists(relationship_type: str) -> None:
+    """Validate relationship type exists in ArchiMate specification."""
+    normalized_type = normalize_relationship_type(relationship_type)
+    if normalized_type not in ARCHIMATE_RELATIONSHIPS:
+        raise ValueError(f"Unknown relationship type '{relationship_type}'. Valid types: {', '.join(sorted(ARCHIMATE_RELATIONSHIPS.keys()))}")
+
+
+def _validate_relationship_required_fields(rel_id: str, from_element: str, to_element: str) -> None:
+    """Validate required relationship fields."""
+    if not rel_id or not rel_id.strip():
+        raise ValueError("Relationship ID is required and cannot be empty")
+
+    if not from_element or not from_element.strip():
+        raise ValueError("Source element ID is required and cannot be empty")
+
+    if not to_element or not to_element.strip():
+        raise ValueError("Target element ID is required and cannot be empty")
+
+
+def _validate_relationship_no_self_reference(from_element: str, to_element: str) -> None:
+    """Validate relationship does not reference the same element as both source and target."""
+    if from_element == to_element:
+        raise ValueError("Relationship cannot reference the same element as both source and target")
 
 
 def validate_relationship_name(custom_name: str, formal_relationship_type: str, language: str = "en") -> Tuple[bool, str]:
     """Validate custom relationship name against formal relationship type."""
     try:
-        if not custom_name or not custom_name.strip():
-            return False, "Relationship name cannot be empty"
+        _validate_name_basic_constraints(custom_name)
 
-        custom_name = custom_name.lower().strip()
-
-        # Get synonyms for the formal relationship type
+        custom_name_lower = custom_name.lower().strip()
         formal_type = normalize_relationship_type(formal_relationship_type)
 
-        # Define relationship type synonyms (this could be expanded)
-        synonyms = {
-            "serving": ["serves", "service", "provides service to", "provides service"],
-            "realization": ["realizes", "implements", "is realized by", "realizes"],
-            "assignment": ["assigned to", "is assigned to", "assignment"],
-            "access": ["accesses", "can access", "has access to"],
-            "influence": ["influences", "affects", "impacts"],
-            "triggering": ["triggers", "starts", "initiates"],
-            "flow": ["flows to", "flows", "data flow"],
-            "specialization": ["specializes", "is a", "inherits from"],
-            "aggregation": ["aggregates", "contains", "part of"],
-            "composition": ["composes", "consists of", "composed of"],
-            "association": ["associated with", "related to", "connects to"]
-        }
+        result, message = _validate_name_semantic_match(custom_name_lower, formal_type)
+        if result:
+            return result, message
 
-        # Check if custom name matches any synonym
-        valid_synonyms = synonyms.get(formal_type.lower(), [])
-        if custom_name in [s.lower() for s in valid_synonyms]:
-            return True, "Valid synonym"
+        _validate_name_length_constraints(custom_name)
 
-        # Check for exact match with formal type
-        if custom_name == formal_type.lower():
-            return True, "Exact match"
-
-        # Allow some flexibility for common variations
-        if len(custom_name) > 50:
-            return False, "Relationship name is too long (max 50 characters)"
-
-        if len(custom_name.split()) > 5:
-            return False, "Relationship name has too many words (max 5 words)"
-
-        # For now, accept any reasonable name that doesn't match the restrictions above
         return True, "Accepted custom name"
 
+    except ValueError as e:
+        return False, str(e)
     except Exception as e:
         return False, f"Validation error: {str(e)}"
+
+
+def _validate_name_basic_constraints(custom_name: str) -> None:
+    """Validate basic constraints for relationship names."""
+    if not custom_name or not custom_name.strip():
+        raise ValueError("Relationship name cannot be empty")
+
+
+def _validate_name_semantic_match(custom_name_lower: str, formal_type: str) -> Tuple[bool, str]:
+    """Validate semantic match between custom name and formal relationship type."""
+    synonyms = {
+        "serving": ["serves", "service", "provides service to", "provides service"],
+        "realization": ["realizes", "implements", "is realized by", "realizes"],
+        "assignment": ["assigned to", "is assigned to", "assignment"],
+        "access": ["accesses", "can access", "has access to"],
+        "influence": ["influences", "affects", "impacts"],
+        "triggering": ["triggers", "starts", "initiates"],
+        "flow": ["flows to", "flows", "data flow"],
+        "specialization": ["specializes", "is a", "inherits from"],
+        "aggregation": ["aggregates", "contains", "part of"],
+        "composition": ["composes", "consists of", "composed of"],
+        "association": ["associated with", "related to", "connects to"]
+    }
+
+    # Check if custom name matches any synonym
+    valid_synonyms = synonyms.get(formal_type.lower(), [])
+    if custom_name_lower in [s.lower() for s in valid_synonyms]:
+        return True, "Valid synonym"
+
+    # Check for exact match with formal type
+    if custom_name_lower == formal_type.lower():
+        return True, "Exact match"
+
+    return False, ""
+
+
+def _validate_name_length_constraints(custom_name: str) -> None:
+    """Validate length constraints for relationship names."""
+    if len(custom_name) > 50:
+        raise ValueError("Relationship name is too long (max 50 characters)")
+
+    if len(custom_name.split()) > 5:
+        raise ValueError("Relationship name has too many words (max 5 words)")

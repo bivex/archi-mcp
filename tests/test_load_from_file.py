@@ -42,12 +42,11 @@ def test_load_from_corrected_example():
     result = diagram_engine.load_diagram_from_file_impl("examples/flower_business_corrected.json")
 
     print("\nResult (first 500 chars):")
-    print(result[:500] + "...")
+    print(result.files.plantuml[:500] + "...")
 
     # Should succeed - check for success status in JSON
-    assert "❌" not in result  # No error emoji
-    assert '"success": true' in result
-    assert "exports" in result.lower()
+    assert result.success is True  # Check for success status
+    assert "exports" in result.export_directory
 
 
 def test_load_nonexistent_file():
@@ -75,12 +74,11 @@ def test_load_absolute_path():
     result = diagram_engine.load_diagram_from_file_impl("examples/flower_business_corrected.json")
 
     print("\nResult (first 500 chars):")
-    print(result[:500] + "...")
+    print(result.files.plantuml[:500] + "...")
 
     # Should succeed - check for success status in JSON
-    assert "❌" not in result  # No error emoji
-    assert '"success": true' in result
-    assert "exports" in result.lower()
+    assert result.success is True  # Check for success status
+    assert "exports" in result.export_directory
 
 
 if __name__ == "__main__":

@@ -64,25 +64,44 @@ def _enhance_validation_error(error_msg: str, diagram_data: dict) -> str:
     enhanced_msg = error_msg
 
     # Check for common missing field errors
-    if "id" in error_msg.lower() and "required" in error_msg.lower():
+    enhanced_msg = _add_field_validation_tips(enhanced_msg, error_msg)
+
+    # Check for note definition issues
+    enhanced_msg = _add_note_validation_tips(enhanced_msg, error_msg, diagram_data)
+
+    # Check for case sensitivity issues
+    enhanced_msg = _add_case_sensitivity_tips(enhanced_msg, error_msg)
+
+    return enhanced_msg
+
+
+def _add_field_validation_tips(enhanced_msg: str, error_msg: str) -> str:
+    """Add tips for common missing field errors."""
+    error_lower = error_msg.lower()
+
+    if "id" in error_lower and "required" in error_lower:
         enhanced_msg += "\n\n💡 TIP: Each element needs a unique 'id' field. Example:\n" \
                        '{"id": "web_server", "name": "Web Server", "element_type": "Application_Component", "layer": "Application"}'
 
-    if "element_type" in error_msg.lower() and "required" in error_msg.lower():
+    if "element_type" in error_lower and "required" in error_lower:
         enhanced_msg += "\n\n💡 TIP: Elements need an 'element_type' field. Common types:\n" \
                        "• Business: Business_Actor, Business_Process, Business_Function\n" \
                        "• Application: Application_Component, Application_Function\n" \
                        "• Technology: Technology_Node, Technology_SystemSoftware"
 
-    if "layer" in error_msg.lower() and "required" in error_msg.lower():
+    if "layer" in error_lower and "required" in error_lower:
         enhanced_msg += "\n\n💡 TIP: Elements need a 'layer' field (case-insensitive). Valid layers:\n" \
                        "Business, Application, Technology, Physical, Motivation, Strategy, Implementation"
 
-    if "relationship_type" in error_msg.lower() and "required" in error_msg.lower():
+    if "relationship_type" in error_lower and "required" in error_lower:
         enhanced_msg += "\n\n💡 TIP: Relationships need a 'relationship_type' field (case-insensitive). Common types:\n" \
                        "Serving, Realization, Access, Composition, Aggregation, Assignment"
 
-    # Check for note definition issues
+    return enhanced_msg
+
+
+def _add_note_validation_tips(enhanced_msg: str, error_msg: str, diagram_data: dict) -> str:
+    """Add tips for note definition issues."""
     if "note" in error_msg.lower() or "notes" in diagram_data.get("elements", []):
         elements = diagram_data.get("elements", [])
         for elem in elements:
@@ -92,12 +111,17 @@ def _enhance_validation_error(error_msg: str, diagram_data: dict) -> str:
                                '{"id": "component1", "name": "My Component", "element_type": "Application_Component", "layer": "Application",\n' \
                                ' "notes": [{"content": "This is a note", "position": "right"}]}\n\n' \
                                "NOT as separate elements with relationships!"
+    return enhanced_msg
 
-    # Check for case sensitivity issues (though we now auto-correct them)
-    if "invalid layer" in error_msg.lower():
+
+def _add_case_sensitivity_tips(enhanced_msg: str, error_msg: str) -> str:
+    """Add tips for case sensitivity issues."""
+    error_lower = error_msg.lower()
+
+    if "invalid layer" in error_lower:
         enhanced_msg += "\n\n💡 NOTE: Layer names are now case-insensitive and auto-corrected."
 
-    if "invalid relationship type" in error_msg.lower():
+    if "invalid relationship type" in error_lower:
         enhanced_msg += "\n\n💡 NOTE: Relationship types are now case-insensitive and auto-corrected."
 
     return enhanced_msg
@@ -400,38 +424,50 @@ def create_diagram_from_template(template_name: str, customizations: Optional[Di
         DiagramGenerationResponse with the generated diagram
     """
     try:
-        # Import template functions
-        from ..resources import get_basic_diagram_template, get_layered_architecture_template
-
-        # Get the appropriate template
-        if template_name == "basic":
-            template_json = get_basic_diagram_template()
-        elif template_name == "layered-architecture":
-            template_json = get_layered_architecture_template()
-        else:
-            raise ArchiMateError(f"Unknown template: {template_name}. Available: basic, layered-architecture")
-
-        # Parse template
-        template_data = json.loads(template_json)
-
-        # Apply customizations if provided
-        if customizations:
-            if "title" in customizations:
-                template_data["title"] = customizations["title"]
-            if "description" in customizations:
-                template_data["description"] = customizations["description"]
-            if "theme" in customizations:
-                template_data["layout"]["theme"] = customizations["theme"]
-            if "direction" in customizations:
-                template_data["layout"]["direction"] = customizations["direction"]
-
-        # Create diagram input and generate
+        _validate_template_parameters(template_name, customizations)
+        template_data = _load_template_content(template_name)
+        template_data = _apply_template_customizations(template_data, customizations)
         diagram_input = DiagramInput.model_validate(template_data)
         return create_archimate_diagram_impl(diagram_input)
 
     except Exception as e:
         logger.error(f"Error creating diagram from template: {e}")
         raise ArchiMateError(f"Failed to create diagram from template '{template_name}': {str(e)}")
+
+
+def _validate_template_parameters(template_name: str, customizations: Optional[Dict[str, Any]]):
+    """Validate template parameters and customizations."""
+    if template_name not in ["basic", "layered-architecture"]:
+        raise ArchiMateError(f"Unknown template: {template_name}. Available: basic, layered-architecture")
+
+
+def _load_template_content(template_name: str) -> dict:
+    """Load and parse template content based on template name."""
+    from ..resources import get_basic_diagram_template, get_layered_architecture_template
+
+    if template_name == "basic":
+        template_json = get_basic_diagram_template()
+    else:  # layered-architecture
+        template_json = get_layered_architecture_template()
+
+    return json.loads(template_json)
+
+
+def _apply_template_customizations(template_data: dict, customizations: Optional[Dict[str, Any]]) -> dict:
+    """Apply customizations to template data."""
+    if not customizations:
+        return template_data
+
+    if "title" in customizations:
+        template_data["title"] = customizations["title"]
+    if "description" in customizations:
+        template_data["description"] = customizations["description"]
+    if "theme" in customizations:
+        template_data["layout"]["theme"] = customizations["theme"]
+    if "direction" in customizations:
+        template_data["layout"]["direction"] = customizations["direction"]
+
+    return template_data
 
 
 @mcp.tool()
@@ -450,9 +486,7 @@ async def enhance_diagram_with_feedback(ctx: Context, diagram: dict) -> DiagramG
     """
     try:
         # First, generate the initial diagram
-        diagram_input = DiagramInput.model_validate(diagram)
-        initial_result = create_archimate_diagram_impl(diagram_input)
-
+        diagram_input, initial_result = await _generate_initial_diagram(diagram)
         if not initial_result.success:
             return initial_result
 
@@ -462,50 +496,7 @@ async def enhance_diagram_with_feedback(ctx: Context, diagram: dict) -> DiagramG
             response_type=DiagramEnhancementRequest
         )
 
-        if enhancement_request.action == "accept":
-            enhancement_data = enhancement_request.data
-
-            # Apply enhancements based on user feedback
-            enhanced_layout = diagram_input.layout or {}
-
-            if enhancement_data.add_legend:
-                enhanced_layout["show_legend"] = True
-
-            if enhancement_data.theme_preference:
-                # Map theme preference to available themes
-                theme_mapping = {
-                    "modern": "MODERN",
-                    "classic": "CLASSIC",
-                    "colorful": "COLORFUL",
-                    "minimal": "MINIMAL",
-                    "dark": "DARK",
-                    "professional": "PROFESSIONAL"
-                }
-                if enhancement_data.theme_preference.lower() in theme_mapping:
-                    enhanced_layout["theme"] = theme_mapping[enhancement_data.theme_preference.lower()]
-
-            # Create enhanced diagram input
-            enhanced_diagram = diagram_input.model_copy()
-            enhanced_diagram.layout = enhanced_layout
-            enhanced_diagram.title = f"{diagram_input.title or 'ArchiMate Diagram'} (Enhanced)"
-
-            if enhancement_data.additional_notes:
-                enhanced_diagram.description = f"{diagram_input.description or ''}\n\nNotes: {enhancement_data.additional_notes}".strip()
-
-            # Generate the enhanced diagram
-            enhanced_result = create_archimate_diagram_impl(enhanced_diagram)
-            enhanced_result.message = "Diagram enhanced with user feedback!"
-            return enhanced_result
-
-        elif enhancement_request.action == "decline":
-            # User declined enhancements, return original diagram
-            initial_result.message = "Diagram generated (enhancement declined)"
-            return initial_result
-
-        else:  # cancel
-            # User cancelled, return original diagram
-            initial_result.message = "Diagram generated (enhancement cancelled)"
-            return initial_result
+        return await _handle_enhancement_action(enhancement_request, diagram_input, initial_result)
 
     except Exception as e:
         logger.error(f"Error in enhance_diagram_with_feedback: {e}")
@@ -516,3 +507,57 @@ async def enhance_diagram_with_feedback(ctx: Context, diagram: dict) -> DiagramG
             export_directory="",
             files=DiagramFiles(plantuml="", png="")
         )
+
+
+async def _generate_initial_diagram(diagram: dict) -> tuple:
+    """Generate the initial diagram from input."""
+    diagram_input = DiagramInput.model_validate(diagram)
+    initial_result = create_archimate_diagram_impl(diagram_input)
+    return diagram_input, initial_result
+
+
+async def _handle_enhancement_action(enhancement_request, diagram_input: DiagramInput, initial_result: DiagramGenerationResponse) -> DiagramGenerationResponse:
+    """Handle the user's enhancement action choice."""
+    if enhancement_request.action == "accept":
+        return await _apply_enhancement_feedback(enhancement_request.data, diagram_input)
+    elif enhancement_request.action == "decline":
+        initial_result.message = "Diagram generated (enhancement declined)"
+        return initial_result
+    else:  # cancel
+        initial_result.message = "Diagram generated (enhancement cancelled)"
+        return initial_result
+
+
+async def _apply_enhancement_feedback(enhancement_data, diagram_input: DiagramInput) -> DiagramGenerationResponse:
+    """Apply user feedback enhancements to the diagram."""
+    # Apply enhancements based on user feedback
+    enhanced_layout = diagram_input.layout or {}
+
+    if enhancement_data.add_legend:
+        enhanced_layout["show_legend"] = True
+
+    if enhancement_data.theme_preference:
+        # Map theme preference to available themes
+        theme_mapping = {
+            "modern": "MODERN",
+            "classic": "CLASSIC",
+            "colorful": "COLORFUL",
+            "minimal": "MINIMAL",
+            "dark": "DARK",
+            "professional": "PROFESSIONAL"
+        }
+        if enhancement_data.theme_preference.lower() in theme_mapping:
+            enhanced_layout["theme"] = theme_mapping[enhancement_data.theme_preference.lower()]
+
+    # Create enhanced diagram input
+    enhanced_diagram = diagram_input.model_copy()
+    enhanced_diagram.layout = enhanced_layout
+    enhanced_diagram.title = f"{diagram_input.title or 'ArchiMate Diagram'} (Enhanced)"
+
+    if enhancement_data.additional_notes:
+        enhanced_diagram.description = f"{diagram_input.description or ''}\n\nNotes: {enhancement_data.additional_notes}".strip()
+
+    # Generate the enhanced diagram
+    enhanced_result = create_archimate_diagram_impl(enhanced_diagram)
+    enhanced_result.message = "Diagram enhanced with user feedback!"
+    return enhanced_result
