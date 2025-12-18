@@ -288,6 +288,37 @@ class ArchiMateXMLValidator:
         except Exception as e:
             result.add_warning(f"xmllint validation error: {str(e)}")
 
+    def validate_xml_string(self, xml_content: str) -> List[str]:
+        """
+        Validate XML string and return list of errors.
+
+        Args:
+            xml_content: XML content to validate
+
+        Returns:
+            List of validation error messages
+        """
+        result = self.validate_xml_content(xml_content)
+        return result.errors + result.warnings
+
+    def get_validation_summary(self, errors: List[str]) -> Dict:
+        """
+        Generate validation summary from error list.
+
+        Args:
+            errors: List of validation errors
+
+        Returns:
+            Dictionary with validation summary
+        """
+        return {
+            'is_valid': len(errors) == 0,
+            'error_count': len(errors),
+            'errors': errors,
+            'validator': 'ArchiMateXMLValidator'
+        }
+
+
 # Environment-controlled validation
 def is_validation_enabled() -> bool:
     """Check if validation is enabled via environment variable."""

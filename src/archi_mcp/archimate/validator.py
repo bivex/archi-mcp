@@ -181,6 +181,107 @@ class ArchiMateValidator:
         # For now, we return an empty matrix and rely on basic validation
         return {}
 
+    def validate_element_type(self, element_type: str, layer: ArchiMateLayer) -> bool:
+        """Validate if element type is valid for the specified layer.
+
+        Args:
+            element_type: Element type to validate
+            layer: ArchiMate layer
+
+        Returns:
+            True if valid, False otherwise
+        """
+        # Valid element types by layer
+        valid_types = {
+            ArchiMateLayer.BUSINESS: [
+                "Business_Actor", "Business_Role", "Business_Collaboration",
+                "Business_Interface", "Business_Function", "Business_Process",
+                "Business_Event", "Business_Service", "Business_Object",
+                "Business_Contract", "Business_Representation", "Location"
+            ],
+            ArchiMateLayer.APPLICATION: [
+                "Application_Component", "Application_Collaboration",
+                "Application_Interface", "Application_Function", "Application_Process",
+                "Application_Event", "Application_Service", "Application_Object",
+                "Data_Object"
+            ],
+            ArchiMateLayer.TECHNOLOGY: [
+                "Node", "Device", "System_Software", "Technology_Collaboration",
+                "Technology_Interface", "Technology_Function", "Technology_Process",
+                "Technology_Event", "Technology_Service", "Technology_Object",
+                "Artifact", "Communication_Network", "Path"
+            ],
+            ArchiMateLayer.PHYSICAL: [
+                "Equipment", "Facility", "Distribution_Network", "Material"
+            ],
+            ArchiMateLayer.MOTIVATION: [
+                "Stakeholder", "Driver", "Assessment", "Goal", "Outcome",
+                "Principle", "Requirement", "Constraint"
+            ],
+            ArchiMateLayer.STRATEGY: [
+                "Capability", "Resource", "Course_of_Action"
+            ],
+            ArchiMateLayer.IMPLEMENTATION: [
+                "Work_Package", "Deliverable", "Implementation_Event", "Plateau"
+            ]
+        }
+
+        return element_type in valid_types.get(layer, [])
+
+    def get_valid_relationships(
+        self,
+        from_element: ArchiMateElement,
+        to_element: ArchiMateElement
+    ) -> List[ArchiMateRelationshipType]:
+        """Get list of valid relationship types between two elements.
+
+        Args:
+            from_element: Source element
+            to_element: Target element
+
+        Returns:
+            List of valid relationship types
+        """
+        valid_relationships = []
+
+        # Basic relationships that can exist between any elements
+        valid_relationships.extend([
+            ArchiMateRelationshipType.ASSOCIATION,
+            ArchiMateRelationshipType.FLOW
+        ])
+
+        # Composition/Aggregation can exist within same layer
+        if from_element.layer == to_element.layer:
+            valid_relationships.extend([
+                ArchiMateRelationshipType.COMPOSITION,
+                ArchiMateRelationshipType.AGGREGATION
+            ])
+
+        # Realization can cross layers in specific ways
+        if (from_element.layer.value in ["Application", "Technology"] and
+            to_element.layer.value == "Business"):
+            valid_relationships.append(ArchiMateRelationshipType.REALIZATION)
+
+        if (from_element.layer.value == "Technology" and
+            to_element.layer.value == "Application"):
+            valid_relationships.append(ArchiMateRelationshipType.REALIZATION)
+
+        # Serving relationships
+        if from_element.layer != to_element.layer:
+            valid_relationships.append(ArchiMateRelationshipType.SERVING)
+
+        # Assignment relationships
+        if (from_element.aspect.value in ["Behavior", "Active Structure"] and
+            to_element.aspect.value == "Active Structure"):
+            valid_relationships.append(ArchiMateRelationshipType.ASSIGNMENT)
+
+        # Access for data/object access
+        if (from_element.aspect.value == "Active Structure" and
+            to_element.aspect.value == "Passive Structure"):
+            valid_relationships.append(ArchiMateRelationshipType.ACCESS)
+
+        return valid_relationships
+
 
 def _validate_access_relationship(from_elem: ArchiMateElement, to_elem: ArchiMateElement) -> List[str]:
     """Validate Access relationship compatibility."""

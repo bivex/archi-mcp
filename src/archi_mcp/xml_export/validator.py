@@ -106,6 +106,53 @@ class ArchiMateXMLValidator:
 
         return errors
 
+    def _validate_elements_section(self, elements_elem: etree.Element) -> List[str]:
+        """Validate elements section."""
+        errors = []
+        element_ids = set()
+
+        for element in elements_elem:
+            element_errors = _validate_individual_element(element, element_ids, self)
+            errors.extend(element_errors)
+
+        return errors
+
+    def _validate_relationships_section(self, relationships_elem: etree.Element) -> List[str]:
+        """Validate relationships section."""
+        errors = []
+        relationship_ids = set()
+
+        for relationship in relationships_elem:
+            relationship_errors = _validate_individual_relationship(relationship, relationship_ids)
+            errors.extend(relationship_errors)
+
+        return errors
+
+    def _find_child(self, parent: etree.Element, child_name: str) -> Optional[etree.Element]:
+        """Find child element by name (namespace-aware)."""
+        for child in parent:
+            tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+            if tag == child_name:
+                return child
+        return None
+
+    def get_validation_summary(self, errors: List[str]) -> Dict[str, Any]:
+        """
+        Get validation summary.
+
+        Args:
+            errors: List of validation errors
+
+        Returns:
+            Validation summary dictionary
+        """
+        return {
+            'is_valid': len(errors) == 0,
+            'error_count': len(errors),
+            'errors': errors,
+            'validator': 'ArchiMateXMLValidator'
+        }
+
 
 def _validate_root_element(root: etree.Element) -> List[str]:
     """Validate the root element tag."""
@@ -159,152 +206,3 @@ def _validate_child_sections(root: etree.Element, validator) -> List[str]:
         errors.extend(validator._validate_relationships_section(relationships_elem))
 
     return errors
-    
-    def _validate_elements_section(self, elements_elem: etree.Element) -> List[str]:
-        """Validate elements section."""
-        errors = []
-        element_ids = set()
-
-        for element in elements_elem:
-            element_errors = _validate_individual_element(element, element_ids, self)
-            errors.extend(element_errors)
-
-        return errors
-
-
-def _validate_individual_element(element: etree.Element, element_ids: set, validator) -> List[str]:
-    """Validate a single element in the elements section."""
-    errors = []
-
-    tag = element.tag.split('}')[-1] if '}' in element.tag else element.tag
-
-    if tag != 'element':
-        errors.append(f"Invalid child element in elements section: {tag}")
-        return errors
-
-    element_id = _validate_element_attributes(element, element_ids, errors)
-    if not element_id:
-        return errors
-
-    _validate_element_structure(element, element_id, validator, errors)
-
-    return errors
-
-
-def _validate_element_attributes(element: etree.Element, element_ids: set, errors: List[str]) -> str:
-    """Validate element attributes and return element ID."""
-    if 'identifier' not in element.attrib:
-        errors.append("Element must have 'identifier' attribute")
-        return ""
-
-    element_id = element.attrib['identifier']
-
-    # Check for duplicate IDs
-    if element_id in element_ids:
-        errors.append(f"Duplicate element identifier: {element_id}")
-    element_ids.add(element_id)
-
-    # Check for xsi:type
-    xsi_type_attr = None
-    for attr_name in element.attrib:
-        if attr_name.endswith('}type') or attr_name == 'type':
-            xsi_type_attr = element.attrib[attr_name]
-            break
-
-    if not xsi_type_attr:
-        errors.append(f"Element {element_id} must have xsi:type attribute")
-
-    return element_id
-
-
-def _validate_element_structure(element: etree.Element, element_id: str, validator, errors: List[str]):
-    """Validate element structure (name element, etc.)."""
-    # Check for name element
-    name_elem = validator._find_child(element, 'name')
-    if name_elem is None:
-        errors.append(f"Element {element_id} must have 'name' child element")
-    
-    def _validate_relationships_section(self, relationships_elem: etree.Element) -> List[str]:
-        """Validate relationships section."""
-        errors = []
-        relationship_ids = set()
-
-        for relationship in relationships_elem:
-            relationship_errors = _validate_individual_relationship(relationship, relationship_ids)
-            errors.extend(relationship_errors)
-
-        return errors
-
-
-def _validate_individual_relationship(relationship: etree.Element, relationship_ids: set) -> List[str]:
-    """Validate a single relationship in the relationships section."""
-    errors = []
-
-    tag = relationship.tag.split('}')[-1] if '}' in relationship.tag else relationship.tag
-
-    if tag != 'relationship':
-        errors.append(f"Invalid child element in relationships section: {tag}")
-        return errors
-
-    relationship_id = _validate_relationship_attributes(relationship, relationship_ids, errors)
-    if relationship_id is not None:
-        _validate_relationship_type(relationship, relationship_id, errors)
-
-    return errors
-
-
-def _validate_relationship_attributes(relationship: etree.Element, relationship_ids: set, errors: List[str]) -> Optional[str]:
-    """Validate relationship attributes and return relationship ID."""
-    # Check required attributes
-    required_attrs = ['identifier', 'source', 'target']
-    for attr in required_attrs:
-        if attr not in relationship.attrib:
-            errors.append(f"Relationship must have '{attr}' attribute")
-            return None
-
-    relationship_id = relationship.attrib.get('identifier')
-    if relationship_id:
-        # Check for duplicate IDs
-        if relationship_id in relationship_ids:
-            errors.append(f"Duplicate relationship identifier: {relationship_id}")
-        relationship_ids.add(relationship_id)
-
-    return relationship_id
-
-
-def _validate_relationship_type(relationship: etree.Element, relationship_id: str, errors: List[str]):
-    """Validate relationship type (xsi:type attribute)."""
-    # Check for xsi:type
-    xsi_type_attr = None
-    for attr_name in relationship.attrib:
-        if attr_name.endswith('}type') or attr_name == 'type':
-            xsi_type_attr = relationship.attrib[attr_name]
-            break
-
-    if not xsi_type_attr:
-        errors.append(f"Relationship {relationship_id} must have xsi:type attribute")
-    
-    def _find_child(self, parent: etree.Element, child_name: str) -> Optional[etree.Element]:
-        """Find child element by name (namespace-aware)."""
-        for child in parent:
-            tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
-            if tag == child_name:
-                return child
-        return None
-    
-    def get_validation_summary(self, errors: List[str]) -> Dict[str, Any]:
-        """
-        Get validation summary.
-        
-        Args:
-            errors: List of validation errors
-            
-        Returns:
-            Validation summary dictionary
-        """
-        return {
-            'is_valid': len(errors) == 0,
-            'error_count': len(errors),
-            'errors': errors,
-            'validator': 'ArchiMate XML Exchange Validator v1.0'
-        }
