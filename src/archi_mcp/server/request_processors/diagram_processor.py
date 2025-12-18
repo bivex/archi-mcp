@@ -102,10 +102,11 @@ def create_archimate_diagram(diagram: dict) -> str:
     • Layout Controls: Fine-tune diagram layout with direction hints (`horizontal`, `vertical`), spacing options (`compact`, `normal`, `wide`), and advanced Graphviz engine pragmas (`layout_engine`, `concentrate`, `nodesep`, `ranksep`).
     • Sprites in Stereotypes: Use custom PlantUML sprites with `$sprite_name` syntax (e.g., `<<$businessProcess>>`) for visual stereotypes.
     • JSON Data Display: Embed JSON data objects in diagrams with automatic `allowmixing` directive for mixed diagram types.
-    • Advanced Hide/Remove System: Use `$tags` for selective element visibility control with `hide $tag` and `remove $tag` operations.
+    • Advanced Hide/Remove System: Use `$tags` for selective element visibility control with `hide $tag` and `remove $tag` operations. Also supports `hide_unlinked` and `remove_unlinked` for automatic handling of elements without relationships, and `remove_all_tagged` for wildcard removal of all tagged elements with selective restore.
     • Long Descriptions: Multi-line component descriptions using bracket syntax `[long description here]` for detailed documentation.
-    • Enhanced Arrow Control: Full directional control with length modifiers (1-5) and positioning hints (`hidden` relationships).
+    • Enhanced Arrow Control: Full directional control with length modifiers (1-5), line styles (solid/dashed/dotted), custom colors, orientation modes (vertical/horizontal/dot), and positioning hints (`hidden` relationships).
     • Component-Specific Styling: Advanced skinparam customization with component-style variants (`uml1`, `uml2`, `rectangle`).
+    • Naming Rules: Components with names starting with '$' require an alias or tag to be hideable/removable (PlantUML limitation).
 
     Args:
         diagram: A `DiagramInput` object containing the specification for the diagram.

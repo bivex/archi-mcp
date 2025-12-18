@@ -41,6 +41,11 @@ class RelationshipInput(BaseModel):
     to_element: str = Field(..., description="Target element ID")
     relationship_type: str = Field(..., description="ArchiMate relationship type (e.g., 'Serving', 'Realization')")
     direction: Optional[str] = Field(None, description="Optional direction (Up, Down, Left, Right)")
+    length: Optional[int] = Field(None, description="Arrow length modifier (1-5)")
+    line_style: str = Field("solid", description="Line style: solid, dashed, dotted")
+    color: Optional[str] = Field(None, description="Custom color for this relationship")
+    orientation: str = Field("vertical", description="Arrow orientation: vertical, horizontal, dot")
+    positioning: Optional[str] = Field(None, description="Advanced positioning hints (e.g., 'hidden')")
     description: Optional[str] = Field(None, description="Relationship description")
     label: Optional[str] = Field(None, description="Custom relationship label")
 
@@ -75,6 +80,15 @@ class RelationshipInput(BaseModel):
 
         if self.direction and self.direction not in {"Up", "Down", "Left", "Right"}:
             raise ValueError(f"Invalid direction '{self.direction}'. Valid directions: Up, Down, Left, Right")
+
+        if self.length is not None and not (1 <= self.length <= 5):
+            raise ValueError(f"Invalid length '{self.length}'. Length must be between 1 and 5")
+
+        if self.line_style not in {"solid", "dashed", "dotted"}:
+            raise ValueError(f"Invalid line_style '{self.line_style}'. Valid styles: solid, dashed, dotted")
+
+        if self.orientation not in {"vertical", "horizontal", "dot"}:
+            raise ValueError(f"Invalid orientation '{self.orientation}'. Valid orientations: vertical, horizontal, dot")
 
         return self
 

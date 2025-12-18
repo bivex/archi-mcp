@@ -172,6 +172,14 @@ class ArchiMateGenerator:
         """
         self.removed_tags.update(tags)
 
+    def remove_all_tagged_elements(self) -> None:
+        """Remove all elements that have any tags (wildcard remove).
+
+        This is equivalent to 'remove *' in PlantUML.
+        Elements can be selectively restored using restore_tags().
+        """
+        self.removed_tags.add("*")
+
     def restore_elements(self, element_ids: List[str]) -> None:
         """Restore previously hidden/removed elements.
 
@@ -337,7 +345,15 @@ class ArchiMateGenerator:
         if self.layout.show_legend:
             lines.append("")
             self._generate_legend(lines)
-        
+
+        # Add hide/remove commands for unlinked elements
+        if self.hide_unlinked:
+            lines.append("")
+            lines.append("hide @unlinked")
+        elif self.remove_unlinked:
+            lines.append("")
+            lines.append("remove @unlinked")
+
         # End PlantUML
         lines.append("")
         lines.append("@enduml")

@@ -116,7 +116,12 @@ def _process_relationships(generator: ArchiMateGenerator, diagram: DiagramInput,
                 to_element=rel_data.to_element,
                 relationship_type=ArchiMateRelationshipType(rel_data.relationship_type),
                 description=rel_data.description,
-                label=rel_data.label
+                label=rel_data.label,
+                length=rel_data.length,
+                line_style=rel_data.line_style,
+                color=rel_data.color,
+                orientation=rel_data.orientation,
+                positioning=rel_data.positioning
             )
             generator.add_relationship(relationship)
             debug_log.append(f"Added relationship: {relationship.id} ({relationship.relationship_type})")
@@ -378,16 +383,18 @@ def create_archimate_diagram_impl(diagram: DiagramInput) -> str:
     • Layout Controls: Fine-tune diagram layout with direction hints (`horizontal`, `vertical`), spacing options (`compact`, `normal`, `wide`), and advanced Graphviz engine pragmas (`layout_engine`, `concentrate`, `nodesep`, `ranksep`).
     • Sprites in Stereotypes: Use custom PlantUML sprites with `$sprite_name` syntax (e.g., `<<$businessProcess>>`) for visual stereotypes.
     • JSON Data Display: Embed JSON data objects in diagrams with automatic `allowmixing` directive for mixed diagram types.
-    • Advanced Hide/Remove System: Use `$tags` for selective element visibility control with `hide $tag` and `remove $tag` operations.
+    • Advanced Hide/Remove System: Use `$tags` for selective element visibility control with `hide $tag` and `remove $tag` operations. Also supports `hide_unlinked` and `remove_unlinked` for automatic handling of elements without relationships, and `remove_all_tagged` for wildcard removal of all tagged elements with selective restore.
     • Long Descriptions: Multi-line component descriptions using bracket syntax `[long description here]` for detailed documentation.
-    • Enhanced Arrow Control: Full directional control with length modifiers (1-5) and positioning hints (`hidden` relationships).
+    • Enhanced Arrow Control: Full directional control with length modifiers (1-5), line styles (solid/dashed/dotted), custom colors, orientation modes (vertical/horizontal/dot), and positioning hints (`hidden` relationships).
     • Component-Specific Styling: Advanced skinparam customization with component-style variants (`uml1`, `uml2`, `rectangle`).
+    • Naming Rules: Components with names starting with '$' require an alias or tag to be hideable/removable (PlantUML limitation).
     • Sprites in Stereotypes: Use custom PlantUML sprites with `$sprite_name` syntax (e.g., `<<$businessProcess>>`) for visual stereotypes.
     • JSON Data Display: Embed JSON data objects in diagrams with automatic `allowmixing` directive for mixed diagram types.
-    • Advanced Hide/Remove System: Use `$tags` for selective element visibility control with `hide $tag` and `remove $tag` operations.
+    • Advanced Hide/Remove System: Use `$tags` for selective element visibility control with `hide $tag` and `remove $tag` operations. Also supports `hide_unlinked` and `remove_unlinked` for automatic handling of elements without relationships, and `remove_all_tagged` for wildcard removal of all tagged elements with selective restore.
     • Long Descriptions: Multi-line component descriptions using bracket syntax `[long description here]` for detailed documentation.
-    • Enhanced Arrow Control: Full directional control with length modifiers (1-5) and positioning hints (`hidden` relationships).
+    • Enhanced Arrow Control: Full directional control with length modifiers (1-5), line styles (solid/dashed/dotted), custom colors, orientation modes (vertical/horizontal/dot), and positioning hints (`hidden` relationships).
     • Component-Specific Styling: Advanced skinparam customization with component-style variants (`uml1`, `uml2`, `rectangle`).
+    • Naming Rules: Components with names starting with '$' require an alias or tag to be hideable/removable (PlantUML limitation).
 
     Args:
         diagram: A `DiagramInput` object containing the specification for the diagram.
@@ -415,6 +422,20 @@ def create_archimate_diagram_impl(diagram: DiagramInput) -> str:
         # Configure layout
         layout = _configure_layout(diagram, debug_log)
         generator.set_layout(layout)
+
+        # Configure hide/remove unlinked elements
+        layout_config = diagram.layout or {}
+        if layout_config.get("hide_unlinked", False):
+            generator.hide_unlinked_elements()
+            debug_log.append("Hide unlinked elements enabled")
+        elif layout_config.get("remove_unlinked", False):
+            generator.remove_unlinked_elements()
+            debug_log.append("Remove unlinked elements enabled")
+
+        # Configure remove all tagged elements (wildcard)
+        if layout_config.get("remove_all_tagged", False):
+            generator.remove_all_tagged_elements()
+            debug_log.append("Remove all tagged elements (wildcard) enabled")
 
         # Process elements, groups and relationships
         _process_elements(generator, diagram, language, debug_log)
